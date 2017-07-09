@@ -98,14 +98,19 @@ export class ArduinoControl extends Service {
         return
       }
       this.setState(State.OK, "ready")
-      this.ready = true
     })
     this.port.on("error", (err) => {
       log.error({err: err}, "serial port error")
       this.stop()
     })
 
-    this.port.on("data", (data) => log.debug("Serialport Message: " + data))
+    this.port.on("data", (data) => {
+      this.ready = true
+      log.debug("Serialport Message: " + data)
+      if (this.writePending) {
+        this.doWrite()
+      }
+    })
   }
 
   update(data) {
