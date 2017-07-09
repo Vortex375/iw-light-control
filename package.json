@@ -17,17 +17,21 @@
     "tslint": "tslint -c tslint.json -p tsconfig.json"
   },
   "dependencies": {
+    "async": "^2.5.0",
+    "deepstream.io-client-js": "^2.2.1",
     "onecolor": "^3.0.4",
     "serialport": "^4.0.7"
   },
   "devDependencies": {
+    "@types/async": "^2.0.40",
     "@types/bunyan": "0.0.37",
-    "@types/lodash": "^4.14.63",
+    "@types/lodash": "^4.14.68",
     "@types/minimist": "^1.2.0",
-    "@types/node": "^7.0.12",
-    "concurrently": "^3.4.0",
+    "@types/node": "^7.0.33",
+    "@types/serialport": "^4.0.9",
+    "concurrently": "^3.5.0",
     "shelljs": "^0.7.7",
-    "tslint": "^5.0.0",
-    "typescript": "^2.2.2"
+    "tslint": "^5.5.0",
+    "typescript": "^2.4.1"
   }
 }

@@ -6,8 +6,8 @@
         "moduleResolution": "node",
         "sourceMap": true,
         "outDir": "dist",
-        "allowJs": true,
         "baseUrl": ".",
+        "rootDir": "src",
         "paths": {
             "*": [
                 "node_modules/*",
@@ -17,5 +17,8 @@
     },
     "include": [
         "src/**/*"
+    ],
+    "exclude": [
+      "node_modules"
     ]
 }
