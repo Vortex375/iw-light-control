@@ -3,8 +3,8 @@
 /// <reference types="deepstream.io-client-js" />
 
 import * as logging from "iw-base/dist/lib/logging"
-import {Service, State, registerFactory} from "iw-base/dist/lib/registry"
-import {DeepstreamClient} from "iw-base/dist/modules/deepstream-client"
+import { Service, State, registerFactory } from "iw-base/dist/lib/registry"
+import { DeepstreamClient } from "iw-base/dist/modules/deepstream-client"
 
 import * as async from "async"
 import * as _ from "lodash"
@@ -122,11 +122,11 @@ export class ArduinoControl extends Service {
       ret.b *= correction.b / 255
     }
     if (brightness !== undefined) {
-      let hsl = onecolor([ret.r, ret.g, ret.b, 255 /* useless alpha channel */])
-      hsl = hsl.lightness(brightness)
-      ret.r = hsl.red()
-      ret.g = hsl.green()
-      ret.b = hsl.blue()
+      let hsv = onecolor([ret.r, ret.g, ret.b, 255 /* useless alpha channel */])
+      hsv = hsv.value(brightness)
+      ret.r = hsv.red() * 255
+      ret.g = hsv.green() * 255
+      ret.b = hsv.blue() * 255
       ret.w *= brightness
     }
 
