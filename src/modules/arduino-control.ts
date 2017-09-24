@@ -17,12 +17,24 @@ import util = require("util")
 const log = logging.getLogger("ArduinoControl")
 
 const SERVICE_TYPE = "arduino-control"
-const BAUD_RATE = 19200
+const BAUD_RATE = 9600
 const DEVICE_NAME = "/dev/ttyUSB%d"
-const SYNC_HEADER = Buffer.from([0x00, 0x55, 0xAA, 0xFF])
+
+/* protocol stuff */
+const PACKET_SIZE = 12
+const START_MARKER = Buffer.from([0x00, 0x55, 0xAA, 0xFF])
+const PROTO_ADDR_BROADCAST     = 255
+const PROTO_CMD_NOOP           = 0
+const PROTO_CMD_PATTERN_SIMPLE = 1
+const PROTO_CMD_ROTATE         = 2
+const PROTO_MOD_NONE           = 0
+const PROTO_MOD_FADE           = (1 << 4)
+const PROTO_FLAG_REPEAT        = 1
+const PROTO_FLAG_LONG_PAYLOAD  = (1 << 7)
+
 
 export enum Pattern {
-  PATTERN_SINGLE
+  PATTERN_SIMPLE
 }
 
 export enum Transition {
@@ -38,6 +50,7 @@ export interface Color {
 
 export class ArduinoControl extends Service {
 
+  private memberAddress: number
   private port: SerialPort
   private ready: boolean = false
   private readonly buf: Buffer
@@ -47,11 +60,11 @@ export class ArduinoControl extends Service {
 
   constructor(private readonly ds: DeepstreamClient) {
     super(SERVICE_TYPE)
-    this.buf = Buffer.allocUnsafe(SYNC_HEADER.length + 4)
-    SYNC_HEADER.copy(this.buf)
+    this.buf = Buffer.alloc(PACKET_SIZE)
+    START_MARKER.copy(this.buf)
   }
 
-  start(port: number | string, dsPath: string) {
+  start(port: number | string, dsPath: string, memberAddress: number) {
     if (typeof port === "string") {
       this.setupPort(port)
     } else {
@@ -75,6 +88,8 @@ export class ArduinoControl extends Service {
         }
       })
     }
+
+    this.memberAddress = memberAddress
 
     this.ds.subscribe(dsPath, (d) => this.update(d), undefined, true)
   }
@@ -114,7 +129,7 @@ export class ArduinoControl extends Service {
   }
 
   update(data) {
-    /* assume PATTERN_SINGLE and APPLY_INSTANT */
+    /* assume PATTERN_SIMPLE and APPLY_INSTANT */
     const color = this.calculateColor(data.value, data.correction, data.brightness)
     this.writePatternSingle(color)
   }
@@ -139,11 +154,25 @@ export class ArduinoControl extends Service {
   }
 
   writePatternSingle(c: Color) {
-    let off = SYNC_HEADER.length
+    log.debug({color: c}, "write PATTERN_SIMPLE")
+    let off = START_MARKER.length
+    off = this.buf.writeUInt8(this.memberAddress, off)
+    off = this.buf.writeUInt8(PROTO_CMD_PATTERN_SIMPLE, off)
+    off = this.buf.writeUInt8(PROTO_FLAG_REPEAT, off) /* FLAG_REPEAT */
     off = this.buf.writeUInt8(c.w, off)
     off = this.buf.writeUInt8(c.b, off)
     off = this.buf.writeUInt8(c.g, off)
     off = this.buf.writeUInt8(c.r, off)
+
+    const checksum = this.memberAddress
+        ^ (PROTO_CMD_PATTERN_SIMPLE)
+        ^ PROTO_FLAG_REPEAT
+        ^ c.w
+        ^ c.b
+        ^ c.g
+        ^ c.r
+
+    this.buf.writeUInt8(checksum, off)
 
     this.doWrite()
   }

@@ -21,4 +21,4 @@ discovery.on("discovered", (addr) => {
 discovery.start(6021)
 
 const control1 = new ArduinoControl(client)
-control1.start(0, "light-control/zone/0")
+control1.start(0, "light-control/zone/0", 1)
