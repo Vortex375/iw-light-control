@@ -1,16 +1,16 @@
-/* MongoDB Query RPC Provider */
+/* Serial Port Interface to Light Control Arduino Device */
 
 /// <reference types="deepstream.io-client-js" />
 
 import * as logging from "iw-base/dist/lib/logging"
-import { Service, State, registerFactory } from "iw-base/dist/lib/registry"
+import { Service, State } from "iw-base/dist/lib/registry"
 import { DeepstreamClient } from "iw-base/dist/modules/deepstream-client"
 
 import * as async from "async"
 import * as _ from "lodash"
 import * as SerialPort from "serialport"
+const ReadLine: any /* TODO: broken typedef */ = SerialPort.parsers.Readline
 import onecolor = require("onecolor")
-
 
 import util = require("util")
 
@@ -32,7 +32,6 @@ const PROTO_MOD_FADE           = (1 << 4)
 const PROTO_FLAG_REPEAT        = 1
 const PROTO_FLAG_LONG_PAYLOAD  = (1 << 7)
 
-
 export enum Pattern {
   PATTERN_SIMPLE
 }
@@ -46,6 +45,12 @@ export interface Color {
   g: number,
   b: number,
   w: number
+}
+
+export interface ArduinoControlConfig {
+  port: number | string,
+  dsPath: string,
+  memberAddress: number
 }
 
 export class ArduinoControl extends Service {
@@ -64,18 +69,19 @@ export class ArduinoControl extends Service {
     START_MARKER.copy(this.buf)
   }
 
-  start(port: number | string, dsPath: string, memberAddress: number) {
-    if (typeof port === "string") {
-      this.setupPort(port)
+  start(config: ArduinoControlConfig) {
+    if (typeof config.port === "string") {
+      this.setupPort(config.port)
     } else {
-      SerialPort.list((err, ports) => {
+      /* TODO: broken typedef */
+      (<any> SerialPort).list((err, ports) => {
         if (err) {
-          log.error({err: err, path: port}, "error listing serial ports")
+          log.error({err: err, path: config.port}, "error listing serial ports")
           this.setState(State.ERROR, "error listing serial ports")
           return
         }
 
-        const comName = util.format(DEVICE_NAME, port)
+        const comName = util.format(DEVICE_NAME, config.port)
 
         for (const p of ports) {
           if (p.comName === comName) {
@@ -84,14 +90,16 @@ export class ArduinoControl extends Service {
           }
         }
         if ( ! this.port) {
-          this.setState(State.ERROR, "port does not exist: " + port)
+          this.setState(State.ERROR, "port does not exist: " + config.port)
         }
       })
     }
 
-    this.memberAddress = memberAddress
+    this.memberAddress = config.memberAddress
 
-    this.ds.subscribe(dsPath, (d) => this.update(d), undefined, true)
+    this.ds.subscribe(config.dsPath, (d) => this.update(d), undefined, true)
+
+    return Promise.resolve()
   }
 
   stop() {
@@ -100,12 +108,14 @@ export class ArduinoControl extends Service {
     }
     this.ready = false
     this.setState(State.INACTIVE, "Serial port closed")
+
+    return Promise.resolve()
   }
 
   setupPort(path: string) {
+    const parser = new ReadLine()
     this.port = new SerialPort(path, {
-      baudRate: BAUD_RATE,
-      parser: SerialPort.parsers.readline("\n")
+      baudRate: BAUD_RATE
     }, err => {
       if (err) {
         log.error({err: err, path: path}, "error opening serial port")
@@ -119,7 +129,8 @@ export class ArduinoControl extends Service {
       this.stop()
     })
 
-    this.port.on("data", (data) => {
+    this.port.pipe(parser)
+    parser.on("data", (data) => {
       this.ready = true
       log.debug("Serialport Message: " + data)
       if (this.writePending) {

@@ -19,16 +19,18 @@
   "dependencies": {
     "async": "^2.5.0",
     "deepstream.io-client-js": "^2.2.1",
+    "lodash": "^4.17.4",
+    "minimist": "^1.2.0",
     "onecolor": "^3.0.4",
-    "serialport": "^4.0.7"
+    "serialport": "^6.0.3"
   },
   "devDependencies": {
     "@types/async": "^2.0.40",
-    "@types/bunyan": "0.0.37",
+    "@types/bunyan": "1.8.3",
     "@types/lodash": "^4.14.68",
     "@types/minimist": "^1.2.0",
-    "@types/node": "^7.0.33",
-    "@types/serialport": "^4.0.9",
+    "@types/node": "^8.0.46",
+    "@types/serialport": "^6.0.0",
     "concurrently": "^3.5.0",
     "shelljs": "^0.7.7",
     "tslint": "^5.5.0",
