@@ -6,6 +6,8 @@ import * as logging from "iw-base/dist/lib/logging"
 import { Service, State } from "iw-base/dist/lib/registry"
 import { DeepstreamClient } from "iw-base/dist/modules/deepstream-client"
 
+import { Color, patternSimple, longPayloadHeader } from "./light-proto"
+
 import * as async from "async"
 import * as _ from "lodash"
 import * as SerialPort from "serialport"
@@ -20,31 +22,12 @@ const SERVICE_TYPE = "arduino-control"
 const BAUD_RATE = 9600
 const DEVICE_NAME = "/dev/ttyUSB%d"
 
-/* protocol stuff */
-const PACKET_SIZE = 12
-const START_MARKER = Buffer.from([0x00, 0x55, 0xAA, 0xFF])
-const PROTO_ADDR_BROADCAST     = 255
-const PROTO_CMD_NOOP           = 0
-const PROTO_CMD_PATTERN_SIMPLE = 1
-const PROTO_CMD_ROTATE         = 2
-const PROTO_MOD_NONE           = 0
-const PROTO_MOD_FADE           = (1 << 4)
-const PROTO_FLAG_REPEAT        = 1
-const PROTO_FLAG_LONG_PAYLOAD  = (1 << 7)
-
 export enum Pattern {
   PATTERN_SIMPLE
 }
 
 export enum Transition {
   APPLY_INSTANT
-}
-
-export interface Color {
-  r: number,
-  g: number,
-  b: number,
-  w: number
 }
 
 export interface ArduinoControlConfig {
@@ -58,15 +41,14 @@ export class ArduinoControl extends Service {
   private memberAddress: number
   private port: SerialPort
   private ready: boolean = false
-  private readonly buf: Buffer
+  /* the next buffer to be written by doWrite() */
+  private buf: Buffer
 
   private writeInProgress: boolean
   private writePending: boolean
 
   constructor(private readonly ds: DeepstreamClient) {
     super(SERVICE_TYPE)
-    this.buf = Buffer.alloc(PACKET_SIZE)
-    START_MARKER.copy(this.buf)
   }
 
   start(config: ArduinoControlConfig) {
@@ -166,24 +148,7 @@ export class ArduinoControl extends Service {
 
   writePatternSingle(c: Color) {
     log.debug({color: c}, "write PATTERN_SIMPLE")
-    let off = START_MARKER.length
-    off = this.buf.writeUInt8(this.memberAddress, off)
-    off = this.buf.writeUInt8(PROTO_CMD_PATTERN_SIMPLE, off)
-    off = this.buf.writeUInt8(PROTO_FLAG_REPEAT, off) /* FLAG_REPEAT */
-    off = this.buf.writeUInt8(c.w, off)
-    off = this.buf.writeUInt8(c.b, off)
-    off = this.buf.writeUInt8(c.g, off)
-    off = this.buf.writeUInt8(c.r, off)
-
-    const checksum = this.memberAddress
-        ^ (PROTO_CMD_PATTERN_SIMPLE)
-        ^ PROTO_FLAG_REPEAT
-        ^ c.w
-        ^ c.b
-        ^ c.g
-        ^ c.r
-
-    this.buf.writeUInt8(checksum, off)
+    this.buf = patternSimple(this.memberAddress, c)
 
     this.doWrite()
   }
@@ -191,6 +156,10 @@ export class ArduinoControl extends Service {
   doWrite() {
     if ( ! this.ready || this.writeInProgress) {
       this.writePending = true
+      return
+    }
+
+    if ( ! this.buf) {
       return
     }
 

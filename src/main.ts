@@ -9,20 +9,13 @@ import minimist = require("minimist")
 const argv = minimist(process.argv.slice(2))
 
 const client = new DeepstreamClient()
-const discovery = new UdpDiscovery()
-
-client.on("connected", () => discovery.pause())
-client.on("disconnected", () => discovery.resume())
-discovery.on("discovered", (addr) => {
-  discovery.pause()
-  client.start({
-    url: `${addr.address}:${addr.port}`,
-    friendlyName: "light-control"
-  })
-})
+const discovery = new UdpDiscovery(client)
 
 discovery.start({
-  port: 6030
+  requestPort: 6030,
+  clientConfig: {
+    friendlyName: "light-control"
+  }
 })
 
 const control1 = new ArduinoControl(client)
