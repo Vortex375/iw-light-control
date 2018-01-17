@@ -22,27 +22,27 @@ export function patternSimple(memberAddress: number, color: Color, fade: boolean
   START_MARKER.copy(buf)
 
   let off = START_MARKER.length
-  off = this.buf.writeUInt8(memberAddress, off)
-  off = this.buf.writeUInt8(PROTO_CMD_PATTERN_SIMPLE, off)
+  off = buf.writeUInt8(memberAddress, off)
+  off = buf.writeUInt8(PROTO_CMD_PATTERN_SIMPLE, off)
   let flags = 0
   if (fade) {
     flags |= PROTO_FLAG_REPEAT
   }
-  off = this.buf.writeUInt8(flags, off) /* FLAG_REPEAT */
-  off = this.buf.writeUInt8(color.w, off)
-  off = this.buf.writeUInt8(color.b, off)
-  off = this.buf.writeUInt8(color.g, off)
-  off = this.buf.writeUInt8(color.r, off)
+  off = buf.writeUInt8(flags, off)
+  off = buf.writeUInt8(color.w, off)
+  off = buf.writeUInt8(color.b, off)
+  off = buf.writeUInt8(color.g, off)
+  off = buf.writeUInt8(color.r, off)
 
   const checksum = memberAddress
-  ^ (PROTO_CMD_PATTERN_SIMPLE)
-  ^ flags
-  ^ color.w
-  ^ color.b
-  ^ color.g
-  ^ color.r
+      ^ (PROTO_CMD_PATTERN_SIMPLE)
+      ^ flags
+      ^ color.w
+      ^ color.b
+      ^ color.g
+      ^ color.r
 
-  this.buf.writeUInt8(checksum, off)
+  buf.writeUInt8(checksum, off)
 
   return buf
 }
@@ -52,23 +52,23 @@ export function longPayloadHeader(memberAddress: number, length: number, offset:
   START_MARKER.copy(buf)
 
   let off = START_MARKER.length
-  off = this.buf.writeUInt8(memberAddress, off)
-  off = this.buf.writeUInt8(PROTO_CMD_PATTERN_SIMPLE, off)
+  off = buf.writeUInt8(memberAddress, off)
+  off = buf.writeUInt8(PROTO_CMD_PATTERN_SIMPLE, off)
   let flags = PROTO_FLAG_LONG_PAYLOAD
   if (repeat) {
     flags |= PROTO_FLAG_REPEAT
   }
-  off = this.buf.writeUInt8(flags, off) /* FLAG_REPEAT */
-  off = this.buf.writeUInt16LE(length, off)
-  off = this.buf.writeUInt16LE(offset, off)
+  off = buf.writeUInt8(flags, off)
+  off = buf.writeUInt16LE(length, off)
+  off = buf.writeUInt16LE(offset, off)
 
   const checksum = memberAddress
-  ^ (PROTO_CMD_PATTERN_SIMPLE)
-  ^ flags
-  ^ length
-  ^ offset
+      ^ (PROTO_CMD_PATTERN_SIMPLE)
+      ^ flags
+      ^ length
+      ^ offset
 
-  this.buf.writeUInt8(checksum, off)
+  buf.writeUInt8(checksum, off)
 
   return buf
 }
