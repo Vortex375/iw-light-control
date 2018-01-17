@@ -19,7 +19,7 @@ import util = require("util")
 const log = logging.getLogger("ArduinoControl")
 
 const SERVICE_TYPE = "arduino-control"
-const BAUD_RATE = 9600
+const BAUD_RATE = 115200
 const DEVICE_NAME = "/dev/ttyUSB%d"
 
 export enum Pattern {
@@ -43,9 +43,13 @@ export class ArduinoControl extends Service {
   private ready: boolean = false
   /* the next buffer to be written by doWrite() */
   private buf: Buffer
+  private longPayload: Buffer
 
   private writeInProgress: boolean
   private writePending: boolean
+
+  private channelName: string
+  private channel: any /* uws signature not available */
 
   constructor(private readonly ds: DeepstreamClient) {
     super(SERVICE_TYPE)
@@ -122,9 +126,41 @@ export class ArduinoControl extends Service {
   }
 
   update(data) {
-    /* assume PATTERN_SIMPLE and APPLY_INSTANT */
-    const color = this.calculateColor(data.value, data.correction, data.brightness)
-    this.writePatternSingle(color)
+    if (this.channel && ! data.channel) {
+      this.channel.close()
+      this.channel = undefined
+      this.channelName = undefined
+    }
+
+    if (this.channel && data.channel !== this.channelName) {
+      this.channel.close()
+      this.channelName = data.channel
+      this.channel = this.ds.openChannel(this.channelName)
+
+      this.channel.on("error", (err) => {
+        log.error({err: err}, "channel error")
+      })
+      this.channel.on("message", (msg) => {
+        if ( ! msg.buffer) {
+          log.warn("message received on channel was not TypedArray instance")
+          return
+        }
+        /* assume offset 0 and repeat */
+        this.buf = longPayloadHeader(this.memberAddress, msg.byteLength, 0, true)
+        this.longPayload = Buffer.from(msg.buffer)
+
+        this.doWrite()
+      })
+
+    } else if (data.value) {
+      /* assume PATTERN_SIMPLE and APPLY_INSTANT */
+      const color = this.calculateColor(data.value, data.correction, data.brightness)
+      log.debug({color: color}, "write PATTERN_SIMPLE")
+      this.buf = patternSimple(this.memberAddress, color)
+      this.longPayload = undefined
+
+      this.doWrite()
+    }
   }
 
   calculateColor(color: Color, correction?: Color, brightness?: number): Color {
@@ -146,13 +182,6 @@ export class ArduinoControl extends Service {
     return ret
   }
 
-  writePatternSingle(c: Color) {
-    log.debug({color: c}, "write PATTERN_SIMPLE")
-    this.buf = patternSimple(this.memberAddress, c)
-
-    this.doWrite()
-  }
-
   doWrite() {
     if ( ! this.ready || this.writeInProgress) {
       this.writePending = true
@@ -168,6 +197,7 @@ export class ArduinoControl extends Service {
     log.debug("writing: " + this.buf.toString("hex"))
     async.series([
       (cb) => this.port.write(this.buf, cb),
+      (cb) => this.longPayload ? this.port.write(this.longPayload, cb) : cb(),
       (cb) => this.port.drain(cb),
     ], (err) => {
       this.writeInProgress = false
