@@ -128,6 +128,7 @@ export class ArduinoControl extends Service {
   update(data) {
     if (this.channel && ! data.channel) {
       this.channel.close()
+      log.info(`channel ${this.channelName} closed`)
       this.channel = undefined
       this.channelName = undefined
     }
@@ -136,6 +137,7 @@ export class ArduinoControl extends Service {
       this.channel.close()
       this.channelName = data.channel
       this.channel = this.ds.openChannel(this.channelName)
+      log.info(`opened channel ${this.channelName}`)
 
       this.channel.on("error", (err) => {
         log.error({err: err}, "channel error")
@@ -146,6 +148,7 @@ export class ArduinoControl extends Service {
           return
         }
         /* assume offset 0 and repeat */
+        log.debug({len: msg.byteLength}, "write LONG_PAYLOAD")
         this.buf = longPayloadHeader(this.memberAddress, msg.byteLength, 0, true)
         this.longPayload = Buffer.from(msg.buffer)
 
@@ -194,6 +197,7 @@ export class ArduinoControl extends Service {
 
     this.writePending = false
     this.writeInProgress = true
+    this.setState(State.BUSY, "writing to port")
     log.debug("writing: " + this.buf.toString("hex"))
     async.series([
       (cb) => this.port.write(this.buf, cb),
