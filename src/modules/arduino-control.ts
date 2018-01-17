@@ -133,8 +133,10 @@ export class ArduinoControl extends Service {
       this.channelName = undefined
     }
 
-    if (this.channel && data.channel !== this.channelName) {
-      this.channel.close()
+    if (data.channel !== this.channelName) {
+      if (this.channel) {
+        this.channel.close()
+      }
       this.channelName = data.channel
       this.channel = this.ds.openChannel(this.channelName)
       log.info(`opened channel ${this.channelName}`)
