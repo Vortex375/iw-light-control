@@ -12,7 +12,6 @@ const client = new DeepstreamClient()
 const discovery = new UdpDiscovery(client)
 
 discovery.start({
-  requestPort: 6030,
   clientConfig: {
     friendlyName: "light-control"
   }
