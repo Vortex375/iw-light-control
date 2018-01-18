@@ -4,7 +4,7 @@
 
 import * as logging from "iw-base/dist/lib/logging"
 import { Service, State } from "iw-base/dist/lib/registry"
-import { DeepstreamClient } from "iw-base/dist/modules/deepstream-client"
+import { DeepstreamClient, Channel } from "iw-base/dist/modules/deepstream-client"
 
 import { Color, patternSimple, longPayloadHeader } from "./light-proto"
 
@@ -49,7 +49,7 @@ export class ArduinoControl extends Service {
   private writePending: boolean
 
   private channelName: string
-  private channel: any /* uws signature not available */
+  private channel: Channel
 
   constructor(private readonly ds: DeepstreamClient) {
     super(SERVICE_TYPE)
@@ -141,10 +141,7 @@ export class ArduinoControl extends Service {
       this.channel = this.ds.openChannel(this.channelName)
       log.info(`opened channel ${this.channelName}`)
 
-      this.channel.on("error", (err) => {
-        log.error({err: err}, "channel error")
-      })
-      this.channel.on("message", (msg) => {
+      this.channel.on("message", (msg : ArrayBuffer)  => {
         if ( ! msg.byteLength) {
           log.warn("message received on channel was not TypedArray instance")
           return
