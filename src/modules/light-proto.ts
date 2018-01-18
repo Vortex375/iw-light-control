@@ -65,8 +65,10 @@ export function longPayloadHeader(memberAddress: number, length: number, offset:
   const checksum = memberAddress
       ^ (PROTO_CMD_PATTERN_SIMPLE)
       ^ flags
-      ^ length
-      ^ offset
+      ^ (length & 0xFF)
+      ^ ((length >> 8) & 0xFF)
+      ^ (offset & 0xFF)
+      ^ ((offset >> 8) & 0xFF)
 
   buf.writeUInt8(checksum, off)
 

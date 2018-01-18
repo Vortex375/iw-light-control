@@ -145,14 +145,14 @@ export class ArduinoControl extends Service {
         log.error({err: err}, "channel error")
       })
       this.channel.on("message", (msg) => {
-        if ( ! msg.buffer) {
+        if ( ! msg.byteLength) {
           log.warn("message received on channel was not TypedArray instance")
           return
         }
         /* assume offset 0 and repeat */
         log.debug({len: msg.byteLength}, "write LONG_PAYLOAD")
         this.buf = longPayloadHeader(this.memberAddress, msg.byteLength, 0, true)
-        this.longPayload = Buffer.from(msg.buffer)
+        this.longPayload = Buffer.from(msg)
 
         this.doWrite()
       })
