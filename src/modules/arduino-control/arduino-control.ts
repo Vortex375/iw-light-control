@@ -19,7 +19,7 @@ import util = require("util")
 const log = logging.getLogger("ArduinoControl")
 
 const SERVICE_TYPE = "arduino-control"
-const BAUD_RATE = 115200
+const DEFAULT_BAUD_RATE = 115200
 const DEVICE_NAME = "/dev/ttyUSB%d"
 
 export enum Pattern {
@@ -33,7 +33,8 @@ export enum Transition {
 export interface ArduinoControlConfig {
   port: number | string,
   dsPath: string,
-  memberAddress: number
+  memberAddress: number,
+  baudRate?: number
 }
 
 export class ArduinoControl extends Service {
@@ -57,7 +58,7 @@ export class ArduinoControl extends Service {
 
   start(config: ArduinoControlConfig) {
     if (typeof config.port === "string") {
-      this.setupPort(config.port)
+      this.setupPort(config.port, config.baudRate || DEFAULT_BAUD_RATE)
     } else {
       /* TODO: broken typedef */
       (<any> SerialPort).list((err, ports) => {
@@ -71,7 +72,7 @@ export class ArduinoControl extends Service {
 
         for (const p of ports) {
           if (p.comName === comName) {
-            this.setupPort(p.comName)
+            this.setupPort(p.comName, config.baudRate || DEFAULT_BAUD_RATE)
             break
           }
         }
@@ -98,10 +99,10 @@ export class ArduinoControl extends Service {
     return Promise.resolve()
   }
 
-  setupPort(path: string) {
+  setupPort(path: string, baudRate: number) {
     const parser = new ReadLine()
     this.port = new SerialPort(path, {
-      baudRate: BAUD_RATE
+      baudRate: baudRate
     }, err => {
       if (err) {
         log.error({err: err, path: path}, "error opening serial port")

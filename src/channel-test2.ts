@@ -29,6 +29,18 @@ const RECORD_PATH = "light-control/zone/1"
 const CHANNEL_PATH = "channel-test2"
 const NUMPIXELS = 240
 
+const COLOR_CORRECTION_8MM = {
+  r: 255,
+  g: 224,
+  b: 140
+}
+
+const UNCORRECTED_COLOR = {
+  r: 255,
+  g: 255,
+  b: 255
+}
+
 const client = new DeepstreamClient()
 const discovery = new UdpDiscovery(client)
 discovery.start()
@@ -45,9 +57,9 @@ function loop(shift) {
   let color = onecolor([ 'HSV', 0, 1, 1, 1 ])
   for (let i = 0; i < NUMPIXELS; i++) {
     let c = color.hue(((i + shift) % 255) / 255)
-    off = buf.writeUInt8(c.red() * 255, off)
-    off = buf.writeUInt8(c.green() * 255, off)
-    off = buf.writeUInt8(c.blue() * 255, off)
+    off = buf.writeUInt8(c.red() * UNCORRECTED_COLOR.r, off)
+    off = buf.writeUInt8(c.green() * UNCORRECTED_COLOR.g, off)
+    off = buf.writeUInt8(c.blue() * UNCORRECTED_COLOR.b, off)
     // off = buf.writeUInt8(0, off) /* for RGBW only */
   }
   if (channel.isOpen()) {
