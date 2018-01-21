@@ -1,5 +1,5 @@
 const PACKET_SIZE = 12
-const START_MARKER = Buffer.from([0x00, 0x55, 0xAA, 0xFF])
+const PROTO_START_MARKER = Buffer.from([0x00, 0x55, 0xAA, 0xFF])
 
 const PROTO_ADDR_BROADCAST     = 255
 const PROTO_CMD_NOOP           = 0
@@ -19,9 +19,9 @@ export interface Color {
 
 export function patternSimple(memberAddress: number, color: Color, fade: boolean = false) : Buffer {
   const buf = Buffer.alloc(PACKET_SIZE)
-  START_MARKER.copy(buf)
+  PROTO_START_MARKER.copy(buf)
 
-  let off = START_MARKER.length
+  let off = PROTO_START_MARKER.length
   off = buf.writeUInt8(memberAddress, off)
   off = buf.writeUInt8(PROTO_CMD_PATTERN_SIMPLE, off)
   let flags = 0
@@ -49,9 +49,9 @@ export function patternSimple(memberAddress: number, color: Color, fade: boolean
 
 export function longPayloadHeader(memberAddress: number, length: number, offset: number = 0, repeat = false) : Buffer {
   const buf = Buffer.alloc(PACKET_SIZE)
-  START_MARKER.copy(buf)
+  PROTO_START_MARKER.copy(buf)
 
-  let off = START_MARKER.length
+  let off = PROTO_START_MARKER.length
   off = buf.writeUInt8(memberAddress, off)
   off = buf.writeUInt8(PROTO_CMD_PATTERN_SIMPLE, off)
   let flags = PROTO_FLAG_LONG_PAYLOAD
