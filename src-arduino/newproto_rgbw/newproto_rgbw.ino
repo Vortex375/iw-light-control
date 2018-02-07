@@ -253,8 +253,8 @@ void handleCommand() {
 
     if (currentHeader.flags & PROTO_FLAG_LONG_PAYLOAD) {
 #ifdef RGBW_MODE
-      uint16_t payloadLength = currentHeader.payloadLength + currentHeader.payloadLength / 4;
-      uint16_t payloadOffset = currentHeader.payloadOffset + currentHeader.payloadOffset / 4;
+      uint16_t payloadLength = currentHeader.payloadLength + currentHeader.payloadLength / 3;
+      uint16_t payloadOffset = currentHeader.payloadOffset + currentHeader.payloadOffset / 3;
 #else
       uint16_t payloadLength = currentHeader.payloadLength;
       uint16_t payloadOffset = currentHeader.payloadOffset;
@@ -271,13 +271,17 @@ void handleCommand() {
       uint8_t* target = ((uint8_t*) pixels.getPixels()) + payloadOffset;
       int b;
       for (unsigned short i = 0; i < payloadLength; i++) {
+#ifdef RGBW_MODE
+        /* assume input data for long payload is RGB and skip every fourth target byte in RGBW mode */
+        if ((i + 1 & 3) == 0) {
+          target[i] = 0;
+          continue;
+        }
+#endif     
         while((b = Serial.read()) < 0) {
           /* wait for data */
         }
-#ifdef RGBW_MODE
-/* assume input data for long payload is RGB and skip every fourth target byte in RGBW mode */
-        if ((i + 1 & 3) == 0) target[i++] = 0;
-#endif
+
         target[i] = (uint8_t) b;
       }
 
