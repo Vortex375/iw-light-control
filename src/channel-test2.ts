@@ -22,10 +22,11 @@ import { DeepstreamClient } from "iw-base/dist/modules/deepstream-client"
 import { UdpDiscovery } from "iw-base/dist/modules/udp-discovery"
 
 import onecolor = require("onecolor")
+import { disconnect } from "cluster";
 
 /* Test script for direct pixel access via channel */
 
-const RECORD_PATH = "light-control/zone/1"
+const RECORD_PATH = "light-control/zone/0"
 const CHANNEL_PATH = "channel-test2"
 const NUMPIXELS = 240
 
@@ -68,15 +69,19 @@ function loop(shift) {
   }
 }
 
-let record = undefined
+let records = []
 client.on("connected", () => {
-  record = client.getRecord(RECORD_PATH)
-  record.set("channel", CHANNEL_PATH)
+  records.push(client.getRecord(RECORD_PATH))
+  records.push(client.getRecord('light-control/zone/1'))
+  records.forEach(r => r.set("channel", CHANNEL_PATH))
 })
 
 process.on("SIGINT", () => {
-  if (record) {
-    record.set("channel", undefined)
-  }
-  process.nextTick(() => process.exit(0))
+  records.forEach(r => r.set("channel", undefined))
+  //process.nextTick(() => process.exit(0))
+  discovery.stop()
+  setTimeout(() => {
+    client.stop()
+    process.exit(0)
+  }, 500)
 })

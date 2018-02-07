@@ -21,6 +21,7 @@ const log = logging.getLogger("ArduinoControl")
 const SERVICE_TYPE = "arduino-control"
 const DEFAULT_BAUD_RATE = 115200
 const DEVICE_NAME = "/dev/ttyUSB%d"
+const INTERFRAME_PAUSE = 8 /* ms */
 
 export enum Pattern {
   PATTERN_SIMPLE
@@ -203,6 +204,9 @@ export class ArduinoControl extends Service {
       (cb) => this.port.write(this.buf, cb),
       (cb) => this.longPayload ? this.port.write(this.longPayload, cb) : cb(),
       (cb) => this.port.drain(cb),
+      /* wait for arduino to process frame, 
+       * before clear to send the next one */
+      (cb) => setTimeout(cb, INTERFRAME_PAUSE)
     ], (err) => {
       this.writeInProgress = false
       if (err) {

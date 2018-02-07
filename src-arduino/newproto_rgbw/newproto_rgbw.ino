@@ -252,8 +252,15 @@ void handleCommand() {
     }
 
     if (currentHeader.flags & PROTO_FLAG_LONG_PAYLOAD) {
+#ifdef RGBW_MODE
+      uint16_t payloadLength = currentHeader.payloadLength + currentHeader.payloadLength / 4;
+      uint16_t payloadOffset = currentHeader.payloadOffset + currentHeader.payloadOffset / 4;
+#else
+      uint16_t payloadLength = currentHeader.payloadLength;
+      uint16_t payloadOffset = currentHeader.payloadOffset;
+#endif
       /* check that long payload fits within the colorBuffer */
-      if (currentHeader.payloadLength + currentHeader.payloadOffset > NUMPIXELS * sizeof(pixel_t)) {
+      if (payloadLength + payloadOffset > NUMPIXELS * sizeof(pixel_t)) {
         #ifdef SERIAL_ENABLE_DEBUG
           Serial.write("Refusing long payload: offset/size of out of range \n");
         #endif
@@ -261,19 +268,23 @@ void handleCommand() {
       }
 
       /* read the long payload */
-      uint8_t* target = ((uint8_t*) pixels.getPixels()) + currentHeader.payloadOffset;
+      uint8_t* target = ((uint8_t*) pixels.getPixels()) + payloadOffset;
       int b;
-      for (unsigned short i = 0; i < currentHeader.payloadLength; i++) {
+      for (unsigned short i = 0; i < payloadLength; i++) {
         while((b = Serial.read()) < 0) {
           /* wait for data */
         }
+#ifdef RGBW_MODE
+/* assume input data for long payload is RGB and skip every fourth target byte in RGBW mode */
+        if ((i + 1 & 3) == 0) target[i++] = 0;
+#endif
         target[i] = (uint8_t) b;
       }
 
       /* handle repeat by repeatedly copying received data into colorBuffer until full */
       if (currentHeader.flags & PROTO_FLAG_REPEAT) {
-        memcpy(target + currentHeader.payloadLength, target, 
-               NUMPIXELS * sizeof(pixel_t) - currentHeader.payloadLength - currentHeader.payloadOffset);
+        memcpy(target + payloadLength, target, 
+               NUMPIXELS * sizeof(pixel_t) - payloadLength - payloadOffset);
       }
 
       /* TODO: long payload implies CMD_PATTERN_SIMPLE and does not support MOD_FADE*/
