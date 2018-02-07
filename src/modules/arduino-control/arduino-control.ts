@@ -154,7 +154,7 @@ export class ArduinoControl extends Service {
         }
         /* assume repeat */
         let offset = Buffer.from(msg).readUInt16LE(0)
-        log.debug({len: msg.byteLength}, "write LONG_PAYLOAD")
+        log.debug({len: msg.byteLength, offset: offset}, "write LONG_PAYLOAD")
         this.buf = longPayloadHeader(this.memberAddress, msg.byteLength, offset, true)
         this.longPayload = Buffer.from(msg, 2)
 
