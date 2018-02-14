@@ -51,34 +51,22 @@ channel.on("open", () => {
   loop(0)
 })
 
-let buf = Buffer.alloc(5)
-// let buf = Buffer.alloc(NUMPIXELS * 3 /* 4 for RGBW */)
+let buf = Buffer.alloc(NUMPIXELS * 3 + 2)
 function loop(shift) {
   // console.log("loop", shift)
-  // let off = 0
-  // let color = onecolor([ 'HSV', 0, 1, 1, 1 ])
-  // for (let i = 0; i < NUMPIXELS; i++) {
-  //   let c = color.hue(((i + shift) % 255) / 255)
-  //   off = buf.writeUInt8(c.red() * UNCORRECTED_COLOR.r, off)
-  //   off = buf.writeUInt8(c.green() * UNCORRECTED_COLOR.g, off)
-  //   off = buf.writeUInt8(c.blue() * UNCORRECTED_COLOR.b, off)
-  //   // off = buf.writeUInt8(0, off) /* for RGBW only */
-  // }
-
-  // buf.fill(0)
-  // let off = shift * 3
-  // buf.writeUInt8(255, off)
-  // buf.writeUInt8(255, off + 1)
-  // buf.writeUInt8(255, off + 2)
-
-  buf.writeUInt16LE(shift * 3, 0)
-  buf.writeUInt8(255, 2)
-  buf.writeUInt8(255, 3)
-  buf.writeUInt8(255, 4)
+  let off = 2
+  let color = onecolor([ 'HSV', 0, 1, 1, 1 ])
+  for (let i = 0; i < NUMPIXELS; i++) {
+    let c = color.hue(((i + shift) % 255) / 255)
+    off = buf.writeUInt8(c.red() * UNCORRECTED_COLOR.r, off)
+    off = buf.writeUInt8(c.green() * UNCORRECTED_COLOR.g, off)
+    off = buf.writeUInt8(c.blue() * UNCORRECTED_COLOR.b, off)
+    // off = buf.writeUInt8(0, off) /* for RGBW only */
+  }
 
   if (channel.isOpen()) {
     channel.send(buf)
-    setTimeout(() => loop((shift + 1) % NUMPIXELS), 64)
+    setTimeout(() => loop((shift + 1) % 255), 16)
   }
 }
 

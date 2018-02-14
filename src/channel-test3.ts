@@ -81,7 +81,7 @@ function loop(shift) {
 
   if (channel.isOpen()) {
     channel.send(buf)
-    setTimeout(() => loop((shift + 1) % NUMPIXELS), 16)
+    setTimeout(() => loop((shift + 1) % NUMPIXELS), 32)
   }
 }
 

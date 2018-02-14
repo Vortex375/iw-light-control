@@ -3,7 +3,7 @@
   #include <avr/power.h>
 #endif
 
-#define SERIAL_BAUD_RATE 115200
+#define SERIAL_BAUD_RATE 250000
 #define RGBW_MODE
 
 
