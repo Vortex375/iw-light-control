@@ -135,7 +135,7 @@ export class ArduinoControl extends Service {
       this.channelName = undefined
     }
 
-    if (data.channel !== this.channelName) {
+    if (data.channel && data.channel !== this.channelName) {
       if (this.channel) {
         this.channel.close()
       }
