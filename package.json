@@ -17,23 +17,23 @@
     "tslint": "tslint -c tslint.json -p tsconfig.json"
   },
   "dependencies": {
-    "async": "^2.5.0",
-    "deepstream.io-client-js": "^2.2.1",
-    "lodash": "^4.17.4",
+    "async": "^2.6.1",
+    "deepstream.io-client-js": "github:Vortex375/deepstream.io-client-js",
+    "lodash": "^4.17.11",
     "minimist": "^1.2.0",
-    "onecolor": "^3.0.4",
-    "serialport": "^6.0.3"
+    "onecolor": "^3.1.0",
+    "serialport": "^7.1.1"
   },
   "devDependencies": {
-    "@types/async": "^2.0.40",
-    "@types/bunyan": "1.8.3",
-    "@types/lodash": "^4.14.68",
+    "@types/async": "^2.0.50",
+    "@types/bunyan": "1.8.5",
+    "@types/lodash": "^4.14.119",
     "@types/minimist": "^1.2.0",
-    "@types/node": "^8.0.46",
-    "@types/serialport": "^6.0.0",
-    "concurrently": "^3.5.0",
-    "shelljs": "^0.7.7",
-    "tslint": "^5.5.0",
-    "typescript": "^2.4.1"
+    "@types/node": "^10.12.18",
+    "@types/serialport": "^7.0.1",
+    "concurrently": "^4.1.0",
+    "shelljs": "^0.8.3",
+    "tslint": "^5.12.0",
+    "typescript": "^3.2.2"
   }
 }
