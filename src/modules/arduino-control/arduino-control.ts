@@ -68,6 +68,7 @@ export class ArduinoControl extends Service {
           this.setState(State.ERROR, "error listing serial ports")
           return
         }
+        log.debug({ports: ports}, "serial port listing")
 
         const comName = util.format(DEVICE_NAME, config.port)
 
