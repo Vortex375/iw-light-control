@@ -6,7 +6,8 @@ import * as logging from "iw-base/dist/lib/logging"
 import { Service, State } from "iw-base/dist/lib/registry"
 import { DeepstreamClient, Channel } from "iw-base/dist/modules/deepstream-client"
 
-import { Color, patternSimple, longPayloadHeader } from "./light-proto"
+import * as proto from "./light-proto"
+import { makePattern, PATTERNS } from "./patterns"
 
 import * as async from "async"
 import * as _ from "lodash"
@@ -43,9 +44,8 @@ export class ArduinoControl extends Service {
   private memberAddress: number
   private port: SerialPort
   private ready: boolean = false
-  /* the next buffer to be written by doWrite() */
-  private buf: Buffer
-  private longPayload: Buffer
+  /* the next frame to be written by doWrite() */
+  private nextFrame: proto.Frame
 
   private writeInProgress: boolean
   private writePending: boolean
@@ -153,43 +153,27 @@ export class ArduinoControl extends Service {
           log.warn("invalid message received on buffer: missing offset")
           return
         }
-        /* assume repeat */
-        let offset = Buffer.from(msg).readUInt16LE(0)
-        log.debug({len: msg.byteLength - 2, offset: offset}, "write LONG_PAYLOAD")
-        this.buf = longPayloadHeader(this.memberAddress, msg.byteLength - 2, offset, true)
-        this.longPayload = Buffer.from(msg, 2)
-
+        /* assume repeat and PATTERN_SIMPLE */
+        const offset = Buffer.from(msg).readUInt16LE(0)
+        this.nextFrame = {
+          memberAddress: this.memberAddress,
+          command: proto.PROTO_CONSTANTS.CMD_PATTERN_SIMPLE,
+          flags: proto.PROTO_CONSTANTS.FLAG_REPEAT,
+          payload: Buffer.from(msg, 2), /* skip offset */
+          payloadOffset: offset
+        }
+        log.debug({len: msg.byteLength - 2, offset: offset}, "write long payload")
         this.doWrite()
       })
 
     } else if (data.value) {
       /* assume PATTERN_SIMPLE and APPLY_INSTANT */
-      const color = this.calculateColor(data.value, data.correction, data.brightness)
-      log.debug({color: color}, "write PATTERN_SIMPLE")
-      this.buf = patternSimple(this.memberAddress, color)
-      this.longPayload = undefined
-
-      this.doWrite()
+      PATTERNS.SIMPLE(this.memberAddress, data).subscribe((frame) => {
+        this.nextFrame = frame
+        log.debug("write PATTERN_SIMPLE")
+        this.doWrite()
+      })
     }
-  }
-
-  calculateColor(color: Color, correction?: Color, brightness?: number): Color {
-    const ret = {r: color.r, g: color.g, b: color.b, w: color.w}
-    if (correction !== undefined) {
-      ret.r *= correction.r / 255
-      ret.g *= correction.g / 255
-      ret.b *= correction.b / 255
-    }
-    if (brightness !== undefined) {
-      let hsv = onecolor([ret.r, ret.g, ret.b, 255 /* useless alpha channel */])
-      hsv = hsv.value(brightness)
-      ret.r = hsv.red() * 255
-      ret.g = hsv.green() * 255
-      ret.b = hsv.blue() * 255
-      ret.w *= brightness
-    }
-
-    return ret
   }
 
   doWrite() {
@@ -198,17 +182,17 @@ export class ArduinoControl extends Service {
       return
     }
 
-    if ( ! this.buf) {
+    if ( ! this.nextFrame) {
       return
     }
 
     this.writePending = false
     this.writeInProgress = true
     this.setState(State.BUSY, "writing to port")
-    log.debug("writing: " + this.buf.toString("hex"))
+    const buf = proto.makeFrame(this.nextFrame)
+    log.debug("writing header: " + buf.toString("hex", 0, 12))
     async.series([
-      (cb) => this.port.write(this.buf, cb),
-      (cb) => this.longPayload ? this.port.write(this.longPayload, cb) : cb(),
+      (cb) => this.port.write(buf, cb),
       (cb) => this.port.drain(cb),
       /* wait for arduino to process frame, 
        * before clear to send the next one */
