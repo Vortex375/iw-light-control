@@ -2,8 +2,8 @@ import * as logging from "iw-base/dist/lib/logging"
 import * as proto from "./light-proto"
 import onecolor = require("onecolor")
 
-import { Observable } from "rxjs"
-import { Pattern } from "./arduino-control";
+import { Observable, EMPTY } from "rxjs"
+import * as _ from "lodash"
 
 const log = logging.getLogger("ArduinoControl", "Patterns")
 
@@ -29,11 +29,16 @@ export function makePattern(memberAddress: number, params: any): Observable<prot
 }
 
 function patternSimple(memberAddress: number, params: any) : Observable<proto.Frame> {
+  /* validate */
+  if ( ! params.value) {
+    return EMPTY
+  }
+
   let command = proto.PROTO_CONSTANTS.CMD_PATTERN_SIMPLE
   if (params.fade) {
     command |= proto.PROTO_CONSTANTS.MOD_FADE
   }
-  const frame: proto.Frame = {
+  return singleObservable({
     memberAddress: memberAddress,
     command: command,
     payload: proto.makeColorValueRGBW(calculateColor(
@@ -41,13 +46,37 @@ function patternSimple(memberAddress: number, params: any) : Observable<proto.Fr
       params.correction,
       params.brightness
     ))
-  }
-  return singleObservable(frame)
+  })
 }
 
-// function patternLinearGradient(memberAddress: number, params: any) : Observable<proto.Frame> {
+function patternLinearGradient(memberAddress: number, params: any) : Observable<proto.Frame> {
+  /* validate */
+  if ( ! params.from || ! params.to || ! params.size) {
+    return EMPTY
+  }
 
-// }
+  const from = calculateColor(params.from, params.correction, params.brightness)
+  const to = calculateColor(params.to, params.correction, params.brightness)
+  const gradient = [from]
+  for (let i = 1; i < params.size - 1; i++) {
+    const color = {
+      r: from.r + (to.r - from.r) * (i / params.size),
+      g: from.g + (to.g - from.g) * (i / params.size),
+      b: from.b + (to.b - from.b) * (i / params.size),
+      w: from.w + (to.w - from.w) * (i / params.size)
+    }
+    gradient.push(color)
+  }
+  gradient.push(to)
+  const buffers = _.map(gradient, proto.makeColorValueRGBW)
+  const payload = Buffer.concat(buffers)
+
+  return singleObservable({
+    memberAddress: memberAddress,
+    command: proto.PROTO_CONSTANTS.CMD_PATTERN_SIMPLE,
+    payload: payload
+  })
+}
 
 function calculateColor(color: proto.Color, correction?: proto.Color, brightness?: number): proto.Color {
   const ret = {r: color.r, g: color.g, b: color.b, w: color.w}
