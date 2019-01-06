@@ -67,7 +67,7 @@ export function makeFrame(frame: Frame): Buffer {
   if (frame.payload.length > 4 || frame.payloadOffset !== undefined) {
     flags |= PROTO_CONSTANTS.FLAG_LONG_PAYLOAD
     const offset = frame.payloadOffset || 0
-    off = buf.writeUInt8(frame.flags, off)
+    off = buf.writeUInt8(flags, off)
     off = buf.writeUInt16LE(frame.payload.length, off)
     off = buf.writeUInt16LE(offset, off)
     const checksum = frame.memberAddress
@@ -85,7 +85,7 @@ export function makeFrame(frame: Frame): Buffer {
     return packet
   } else {
     flags &= ~PROTO_CONSTANTS.FLAG_LONG_PAYLOAD
-    off = buf.writeUInt8(frame.flags, off)
+    off = buf.writeUInt8(flags, off)
     let payload: Buffer
     if (frame.payload.length < 4) {
       payload = Buffer.alloc(4)
