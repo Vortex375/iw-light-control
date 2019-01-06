@@ -13,7 +13,7 @@ type LoopFunction = (timeDiff: number) => proto.Frame
 
 export const PATTERNS = {
   "SIMPLE":  patternSimple,
-  // "LINEAR_GRADIENT": patternLinearGradient
+  "LINEAR_GRADIENT": patternLinearGradient
 }
 
 const DEFAULT_FPS = 30
