@@ -167,11 +167,10 @@ export class ArduinoControl extends Service {
         this.doWrite()
       })
 
-    } else if (data.value) {
-      /* assume PATTERN_SIMPLE and APPLY_INSTANT */
-      PATTERNS.SIMPLE(this.memberAddress, data).subscribe((frame) => {
+    } else {
+      makePattern(this.memberAddress, data).subscribe((frame) => {
         this.nextFrame = frame
-        log.debug("write PATTERN_SIMPLE")
+        log.debug("write", data.pattern || "PATTERN_SIMPLE")
         this.doWrite()
       })
     }
