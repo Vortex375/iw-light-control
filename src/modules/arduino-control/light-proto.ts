@@ -59,6 +59,7 @@ export function parseColorValueRGBW(value: Buffer, offset = 0): Color {
 
 export function makeFrame(frame: Frame): Buffer {
   const buf = Buffer.allocUnsafe(PROTO_CONSTANTS.HEADER_SIZE)
+  PROTO_CONSTANTS.START_MARKER.copy(buf)
   let off = PROTO_CONSTANTS.START_MARKER.length
   off = buf.writeUInt8(frame.memberAddress, off)
   off = buf.writeUInt8(frame.command, off)
