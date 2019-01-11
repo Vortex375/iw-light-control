@@ -20,6 +20,7 @@
 
 import { DeepstreamClient } from "iw-base/dist/modules/deepstream-client"
 import { UdpDiscovery } from "iw-base/dist/modules/udp-discovery"
+import * as proto from './modules/arduino-control/light-proto'
 
 import onecolor = require("onecolor")
 import { disconnect } from "cluster";
@@ -28,7 +29,7 @@ import { disconnect } from "cluster";
 
 const RECORD_PATH = "light-control/zone/0"
 const CHANNEL_PATH = "channel-test2"
-const NUMPIXELS = 240
+const NUMPIXELS = 120
 
 const COLOR_CORRECTION_8MM = {
   r: 255,
@@ -51,29 +52,34 @@ channel.on("open", () => {
   loop(0)
 })
 
-let buf = Buffer.alloc(NUMPIXELS * 3 + 2)
+let buf = Buffer.alloc(NUMPIXELS * 3)
 function loop(shift) {
   // console.log("loop", shift)
-  let off = 2
+  let off = 0
   let color = onecolor([ 'HSV', 0, 1, 1, 1 ])
   for (let i = 0; i < NUMPIXELS; i++) {
-    let c = color.hue(((i + shift) % 255) / 255)
-    off = buf.writeUInt8(c.red() * UNCORRECTED_COLOR.r, off)
-    off = buf.writeUInt8(c.green() * UNCORRECTED_COLOR.g, off)
-    off = buf.writeUInt8(c.blue() * UNCORRECTED_COLOR.b, off)
+    let c = color.hue(((i + shift) % NUMPIXELS) / NUMPIXELS)
     // off = buf.writeUInt8(0, off) /* for RGBW only */
+    off = buf.writeUInt8(c.blue() * UNCORRECTED_COLOR.b, off)
+    off = buf.writeUInt8(c.green() * UNCORRECTED_COLOR.g, off)
+    off = buf.writeUInt8(c.red() * UNCORRECTED_COLOR.r, off)
   }
 
   if (channel.isOpen()) {
-    channel.send(buf)
-    setTimeout(() => loop((shift + 1) % 255), 16)
+    channel.send(proto.makeFrame({
+      command: proto.PROTO_CONSTANTS.CMD_PATTERN_SIMPLE,
+      memberAddress: 1,
+      flags: proto.PROTO_CONSTANTS.FLAG_REPEAT,
+      payload: buf
+    }))
+    setTimeout(() => loop((shift + 1) % NUMPIXELS), 16)
   }
 }
 
 let records = []
 client.on("connected", () => {
   records.push(client.getRecord(RECORD_PATH))
-  records.push(client.getRecord('light-control/zone/1'))
+  // records.push(client.getRecord('light-control/zone/1'))
   records.forEach(r => r.set("channel", CHANNEL_PATH))
 })
 

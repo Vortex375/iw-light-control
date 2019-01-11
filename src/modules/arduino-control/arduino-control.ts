@@ -24,6 +24,8 @@ const DEFAULT_BAUD_RATE = 250000
 const DEVICE_NAME = "/dev/ttyUSB%d"
 const INTERFRAME_PAUSE = 8 /* ms */
 
+const EMPTY_BUFFER = Buffer.alloc(proto.PROTO_CONSTANTS.HEADER_SIZE)
+
 export enum Pattern {
   PATTERN_SIMPLE
 }
@@ -46,12 +48,16 @@ export class ArduinoControl extends Service {
   private ready: boolean = false
   /* the next frame to be written by doWrite() */
   private nextFrame: proto.Frame
+  private nextFrameNative: Buffer
 
   private writeInProgress: boolean
   private writePending: boolean
 
   private channelName: string
   private channel: Channel
+
+  /* work around node.js (serialport library?) bug */
+  private dummyTimer: any
 
   constructor(private readonly ds: DeepstreamClient) {
     super(SERVICE_TYPE)
@@ -104,7 +110,8 @@ export class ArduinoControl extends Service {
   setupPort(path: string, baudRate: number) {
     const parser = new ReadLine()
     this.port = new SerialPort(path, {
-      baudRate: baudRate
+      baudRate: baudRate,
+      highWaterMark: 1024
     }, err => {
       if (err) {
         log.error({err: err, path: path}, "error opening serial port")
@@ -122,11 +129,14 @@ export class ArduinoControl extends Service {
     parser.on("data", (data) => {
       log.debug("Serialport Message: " + data)
       this.ready = true
+      this.resetDummyTimer()
       this.setState(State.OK, "ready")
       if (this.writePending) {
         this.doWrite()
       }
     })
+
+    this.setDummyTimer()
   }
 
   update(data) {
@@ -150,30 +160,54 @@ export class ArduinoControl extends Service {
           log.warn("message received on channel was not TypedArray instance")
           return
         }
-        if (msg.byteLength < 2) {
-          log.warn("invalid message received on buffer: missing offset")
+        if (msg.byteLength < 12) {
+          log.warn("invalid message received on buffer: missing header")
           return
         }
-        /* assume repeat and PATTERN_SIMPLE */
-        const offset = Buffer.from(msg).readUInt16LE(0)
-        this.nextFrame = {
-          memberAddress: this.memberAddress,
-          command: proto.PROTO_CONSTANTS.CMD_PATTERN_SIMPLE,
-          flags: proto.PROTO_CONSTANTS.FLAG_REPEAT,
-          payload: Buffer.from(msg, 2), /* skip offset */
-          payloadOffset: offset
-        }
-        log.debug({len: msg.byteLength - 2, offset: offset}, "write long payload")
+        log.debug({len: msg.byteLength}, "write long payload")
+        this.queueWriteNative(Buffer.from(msg))
         this.doWrite()
       })
 
     } else {
       makePattern(this.memberAddress, data).subscribe((frame) => {
-        this.nextFrame = frame
         log.debug("write", data.pattern || "PATTERN_SIMPLE")
-        this.doWrite()
+        this.queueWrite(frame)
       })
     }
+  }
+
+  setDummyTimer() {
+    /* work around a bug in node.js or the serialport library
+     * for some reason events from the serial port are not processed
+     * unless we manually spin the even loop like so */
+    this.resetDummyTimer()
+    this.dummyTimer = setInterval(() => {}, 1)
+  }
+
+  resetDummyTimer() {
+    if (this.dummyTimer !== undefined) {
+      clearInterval(this.dummyTimer)
+    }
+    this.dummyTimer = undefined
+  }
+
+  queueWrite(frame: proto.Frame) {
+    if (this.nextFrame !== undefined) {
+      log.warn("dropping frame")
+    }
+    this.nextFrame = frame
+    this.nextFrameNative = undefined
+    this.doWrite()
+  }
+
+  queueWriteNative(frame: Buffer) {
+    if (this.nextFrameNative !== undefined) {
+      log.warn("dropping frame")
+    }
+    this.nextFrameNative = frame
+    this.nextFrame = undefined
+    this.doWrite()
   }
 
   doWrite() {
@@ -182,22 +216,37 @@ export class ArduinoControl extends Service {
       return
     }
 
-    if ( ! this.nextFrame) {
+    if ( ! this.nextFrame && ! this.nextFrameNative) {
       return
     }
 
     this.writePending = false
     this.writeInProgress = true
     this.setState(State.BUSY, "writing to port")
-    const buf = proto.makeFrame(this.nextFrame)
+    let buf: Buffer
+    if (this.nextFrameNative) {
+      buf = this.nextFrameNative
+    } else {
+      buf = proto.makeFrame(this.nextFrame)
+    }
+    this.nextFrameNative = undefined
+    this.nextFrame = undefined
     log.debug("writing header: " + buf.toString("hex", 0, 12))
+    this.setDummyTimer()
     async.series([
-      (cb) => this.port.write(buf, cb),
-      (cb) => this.port.drain(cb),
-      /* wait for arduino to process frame, 
-       * before clear to send the next one */
-      (cb) => setTimeout(cb, INTERFRAME_PAUSE)
+      (cb) => {
+        this.port.write(buf)
+        let free = this.port.write(EMPTY_BUFFER)
+        log.debug({len: buf.length, free: free }, "wrote", buf.length, "bytes")
+        if ( ! free) {
+          /* drain first before writing again */
+          this.port.once("drain", cb)
+        } else {
+          setImmediate(cb)
+        }
+      },
     ], (err) => {
+      this.resetDummyTimer()
       this.writeInProgress = false
       if (err) {
         log.error({err: err}, "Error writing to serial port")
