@@ -95,11 +95,14 @@ export class ArduinoControl extends Service {
 
     this.memberAddress = config.memberAddress
 
-    this.ds.subscribe(config.dsPath, (d) => this.update(d), undefined, true)
+    this.ds.subscribe(config.dsPath, (d) => {
+      this.data = d
+      this.update()
+    }, undefined, true)
     this.ds.subscribe(config.globalPath, (d) => {
       this.globalSettings = d
-      this.update(this.data || {})
-    })
+      this.update()
+    }, undefined, true)
 
     return Promise.resolve()
   }
@@ -146,8 +149,11 @@ export class ArduinoControl extends Service {
     this.setDummyTimer()
   }
 
-  update(data) {
-    this.data = data
+  update() {
+    if ( ! this.data) {
+      return
+    }
+    const data = _.clone(this.data)
     /* apply global brightness */
     if (_.isNumber(data.brightness)) {
       let globalBrightness
