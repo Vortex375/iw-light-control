@@ -37,6 +37,7 @@ export enum Transition {
 export interface ArduinoControlConfig {
   port: number | string,
   dsPath: string,
+  globalPath: string,
   memberAddress: number,
   baudRate?: number
 }
@@ -55,6 +56,8 @@ export class ArduinoControl extends Service {
 
   private channelName: string
   private channel: Channel
+  private globalSettings: any
+  private data: any
 
   /* work around node.js (serialport library?) bug */
   private dummyTimer: any
@@ -93,6 +96,10 @@ export class ArduinoControl extends Service {
     this.memberAddress = config.memberAddress
 
     this.ds.subscribe(config.dsPath, (d) => this.update(d), undefined, true)
+    this.ds.subscribe(config.globalPath, (d) => {
+      this.globalSettings = d
+      this.update(this.data || {})
+    })
 
     return Promise.resolve()
   }
@@ -140,6 +147,19 @@ export class ArduinoControl extends Service {
   }
 
   update(data) {
+    this.data = data
+    /* apply global brightness */
+    if (_.isNumber(data.brightness)) {
+      let globalBrightness
+      if ( ! this.globalSettings || ! _.isNumber(this.globalSettings.brightness)) {
+        globalBrightness = 1
+      } else {
+        globalBrightness = this.globalSettings.brightness
+      }
+      data.brightness *= globalBrightness
+    }
+
+    /* channel was closed */
     if (this.channel && ! data.channel) {
       this.channel.close()
       log.info(`channel ${this.channelName} closed`)
@@ -147,6 +167,7 @@ export class ArduinoControl extends Service {
       this.channelName = undefined
     }
 
+    /* open channel for direct write */
     if (data.channel && data.channel !== this.channelName) {
       if (this.channel) {
         this.channel.close()
@@ -169,6 +190,7 @@ export class ArduinoControl extends Service {
         this.doWrite()
       })
 
+    /* create color pattern */
     } else {
       makePattern(this.memberAddress, data).subscribe((frame) => {
         log.debug("write", data.pattern || "PATTERN_SIMPLE")

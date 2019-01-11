@@ -21,5 +21,6 @@ const control1 = new ArduinoControl(client)
 control1.start({
   port: 0,
   dsPath: "light-control/zone/1",
+  globalPath: "light-control/global",
   memberAddress: 1
 })
