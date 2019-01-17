@@ -22,6 +22,7 @@ const log = logging.getLogger("ArduinoControl")
 
 const SERVICE_TYPE = "arduino-control"
 const DEFAULT_BAUD_RATE = 250000
+const INTERFRAME_PAUSE = 8 /* ms */
 const DEVICE_NAME = "/dev/ttyUSB%d"
 
 const EMPTY_BUFFER = Buffer.alloc(proto.PROTO_CONSTANTS.HEADER_SIZE)
@@ -54,6 +55,7 @@ export class ArduinoControl extends Service {
 
   private writeInProgress: boolean
   private writePending: boolean
+  private pauseBeforeNextWrite: boolean
 
   private channelName: string
   private channel: Channel
@@ -158,10 +160,15 @@ export class ArduinoControl extends Service {
     if ( ! this.data) {
       return
     }
+
     if (this.currentPattern) {
       this.currentPattern.unsubscribe()
       this.currentPattern = undefined
     }
+
+    /* insert INTERFRAME_PAUSE when responding to config changes
+     * to increase likelihood that Arduino catches the updates */
+    this.pauseBeforeNextWrite = true
 
     const data = _.clone(this.data)
     /* apply global brightness */
@@ -266,17 +273,20 @@ export class ArduinoControl extends Service {
     if (this.nextFrameNative) {
       buf = this.nextFrameNative
     } else {
-      if (this.firstWrite) {
-        this.nextFrame.command |= proto.PROTO_CONSTANTS.MOD_FADE
-      }
+      // if (this.firstWrite) {
+      //   this.nextFrame.command |= proto.PROTO_CONSTANTS.MOD_FADE
+      // }
       buf = proto.makeFrame(this.nextFrame)
     }
     this.nextFrameNative = undefined
     this.nextFrame = undefined
     this.firstWrite = false
+    const pauseFirst = this.pauseBeforeNextWrite
+    this.pauseBeforeNextWrite = false
     log.debug("writing header: " + buf.toString("hex", 0, 12))
     this.setDummyTimer()
     async.series([
+      (cb) => pauseFirst ? setTimeout(cb, INTERFRAME_PAUSE) : cb(),
       (cb) => {
         this.port.write(buf)
         let free = this.port.write(EMPTY_BUFFER)
