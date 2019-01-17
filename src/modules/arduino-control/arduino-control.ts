@@ -46,6 +46,7 @@ export class ArduinoControl extends Service {
   private memberAddress: number
   private port: SerialPort
   private ready: boolean = false
+  private firstWrite: boolean = false
   /* the next frame to be written by doWrite() */
   private nextFrame: proto.Frame
   private nextFrameNative: Buffer
@@ -111,6 +112,7 @@ export class ArduinoControl extends Service {
       this.port.close()
     }
     this.ready = false
+    this.firstWrite = false
     this.setState(State.INACTIVE, "Serial port closed")
 
     return Promise.resolve()
@@ -138,6 +140,7 @@ export class ArduinoControl extends Service {
     parser.on("data", (data) => {
       log.debug("Serialport Message: " + data)
       this.ready = true
+      this.firstWrite = true
       this.resetDummyTimer()
       this.setState(State.OK, "ready")
       if (this.writePending) {
@@ -254,10 +257,14 @@ export class ArduinoControl extends Service {
     if (this.nextFrameNative) {
       buf = this.nextFrameNative
     } else {
+      if (this.firstWrite) {
+        this.nextFrame.command |= proto.PROTO_CONSTANTS.MOD_FADE
+      }
       buf = proto.makeFrame(this.nextFrame)
     }
     this.nextFrameNative = undefined
     this.nextFrame = undefined
+    this.firstWrite = false
     log.debug("writing header: " + buf.toString("hex", 0, 12))
     this.setDummyTimer()
     async.series([
