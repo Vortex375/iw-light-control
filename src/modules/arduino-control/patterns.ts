@@ -82,21 +82,28 @@ function patternRainbow(memberAddress: number, params: any): Observable<proto.Fr
   if ( ! _.isFinite(params.size)) {
     return EMPTY
   }
+  const speed = params.speed || 32
 
-  const buf = Buffer.alloc(params.size)
+  const buf = Buffer.alloc(params.size * 3)
   const frame: proto.Frame = {
     memberAddress: memberAddress,
     command: proto.PROTO_CONSTANTS.CMD_PATTERN_SIMPLE,
     flags: proto.PROTO_CONSTANTS.FLAG_REPEAT,
     payload: buf
   }
+  const baseColor = onecolor([ 'HSV', 0, 1, 1, 1 ])
 
   function loop(shift: number) {
     let off = 0
-    let color = onecolor([ 'HSV', 0, 1, 1, 1 ])
     for (let i = 0; i < params.size; i++) {
-      let c = color.hue(((i + shift) % params.size) / params.size)
-      let val = proto.makeColorValueRGBW(calculateColor(c, params.correction, params.brightness))
+      let c = baseColor.hue(((i + shift) % params.size) / params.size)
+      let color = {
+        r: c.red() * 255,
+        g: c.green() * 255,
+        b: c.blue() * 255,
+        w: 0
+      }
+      let val = proto.makeColorValueRGB(calculateColor(color, params.correction, params.brightness))
       val.copy(buf, off, 0, val.length)
       off += val.length
     }
@@ -107,10 +114,10 @@ function patternRainbow(memberAddress: number, params: any): Observable<proto.Fr
   loop(currentShift);
 
   return animationObservable(frame, (timeDiff) => {
-    currentShift = ((currentShift + Math.floor(timeDiff * 16)) % params.size)
+    currentShift = (currentShift + timeDiff * speed) % params.size
     loop(currentShift)
     return [frame]
-  })
+  }, params.fps)
 }
 
 function calculateColor(color: proto.Color, correction?: proto.Color, brightness?: number): proto.Color {
@@ -120,7 +127,7 @@ function calculateColor(color: proto.Color, correction?: proto.Color, brightness
     ret.g *= correction.g / 255
     ret.b *= correction.b / 255
   }
-  if (brightness !== undefined) {
+  if (brightness !== undefined && brightness < 1) {
     let hsv = onecolor([ret.r, ret.g, ret.b, 255 /* useless alpha channel */])
     hsv = hsv.value(brightness)
     ret.r = hsv.red() * 255

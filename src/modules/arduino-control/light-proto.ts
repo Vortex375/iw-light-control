@@ -48,6 +48,14 @@ export function makeColorValueRGBW(color: Color): Buffer {
   return buf
 }
 
+export function makeColorValueRGB(color: Color): Buffer {
+  const buf = Buffer.allocUnsafe(3)
+  buf.writeUInt8(color.b, 0)
+  buf.writeUInt8(color.g, 1)
+  buf.writeUInt8(color.r, 2)
+  return buf
+}
+
 export function parseColorValueRGBW(value: Buffer, offset = 0): Color {
   return {
     r: value.readUInt8(offset + 3),
