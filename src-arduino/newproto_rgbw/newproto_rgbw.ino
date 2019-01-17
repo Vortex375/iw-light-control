@@ -124,6 +124,7 @@ bool fadeStep() {
       }
     }
     current += sizeof(pixel_t);
+    if (protoStep()) return;
   }
 
   needFade = ! done;
@@ -293,6 +294,7 @@ void handleCommand() {
 
       /* TODO: long payload implies CMD_PATTERN_SIMPLE and does not support MOD_FADE*/
       needShow = true;
+      needFade = false;
       
     } else { /* simple 4-byte payload */
       if (currentHeader.command & PROTO_CMD_PATTERN_SIMPLE) {

@@ -22,7 +22,6 @@ const log = logging.getLogger("ArduinoControl")
 const SERVICE_TYPE = "arduino-control"
 const DEFAULT_BAUD_RATE = 250000
 const DEVICE_NAME = "/dev/ttyUSB%d"
-const INTERFRAME_PAUSE = 8 /* ms */
 
 const EMPTY_BUFFER = Buffer.alloc(proto.PROTO_CONSTANTS.HEADER_SIZE)
 
@@ -156,7 +155,7 @@ export class ArduinoControl extends Service {
     const data = _.clone(this.data)
     /* apply global brightness */
     if (_.isNumber(data.brightness)) {
-      let globalBrightness
+      let globalBrightness: number
       if ( ! this.globalSettings || ! _.isNumber(this.globalSettings.brightness)) {
         globalBrightness = 1
       } else {

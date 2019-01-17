@@ -8,12 +8,12 @@ import * as _ from "lodash"
 const log = logging.getLogger("ArduinoControl", "Patterns")
 
 type PatternFunction = (memberAddress: number, params: any) => Observable<proto.Frame>
-
-type LoopFunction = (timeDiff: number) => proto.Frame
+type LoopFunction = (timeDiff: number) => proto.Frame[]
 
 export const PATTERNS = {
   "SIMPLE":  patternSimple,
-  "LINEAR_GRADIENT": patternLinearGradient
+  "LINEAR_GRADIENT": patternLinearGradient,
+  "RAINBOW": patternRainbow
 }
 
 const DEFAULT_FPS = 30
@@ -49,7 +49,7 @@ function patternSimple(memberAddress: number, params: any) : Observable<proto.Fr
   })
 }
 
-function patternLinearGradient(memberAddress: number, params: any) : Observable<proto.Frame> {
+function patternLinearGradient(memberAddress: number, params: any): Observable<proto.Frame> {
   /* validate */
   if ( ! params.from || ! params.to || ! params.size) {
     return EMPTY
@@ -75,6 +75,41 @@ function patternLinearGradient(memberAddress: number, params: any) : Observable<
     memberAddress: memberAddress,
     command: proto.PROTO_CONSTANTS.CMD_PATTERN_SIMPLE,
     payload: payload
+  })
+}
+
+function patternRainbow(memberAddress: number, params: any): Observable<proto.Frame> {
+  if ( ! _.isFinite(params.size)) {
+    return EMPTY
+  }
+
+  const buf = Buffer.alloc(params.size)
+  const frame: proto.Frame = {
+    memberAddress: memberAddress,
+    command: proto.PROTO_CONSTANTS.CMD_PATTERN_SIMPLE,
+    flags: proto.PROTO_CONSTANTS.FLAG_REPEAT,
+    payload: buf
+  }
+
+  function loop(shift: number) {
+    let off = 0
+    let color = onecolor([ 'HSV', 0, 1, 1, 1 ])
+    for (let i = 0; i < params.size; i++) {
+      let c = color.hue(((i + shift) % params.size) / params.size)
+      let val = proto.makeColorValueRGBW(calculateColor(c, params.correction, params.brightness))
+      val.copy(buf, off, 0, val.length)
+      off += val.length
+    }
+  }
+
+  /* make initial frame */
+  let currentShift = 0
+  loop(currentShift);
+
+  return animationObservable(frame, (timeDiff) => {
+    currentShift = ((currentShift + Math.floor(timeDiff * 16)) % params.size)
+    loop(currentShift)
+    return [frame]
   })
 }
 
@@ -105,14 +140,13 @@ function singleObservable(frame: proto.Frame): Observable<proto.Frame> {
 }
 
 function animationObservable(initialFrame: proto.Frame, loop: LoopFunction, fps = DEFAULT_FPS): Observable<proto.Frame> {
-  let loopTimer = undefined
   return new Observable(function(subscriber) {
     subscriber.next(initialFrame)
     let now = process.hrtime()
-    loopTimer = setInterval(() => {
+    const loopTimer = setInterval(() => {
       const diff = process.hrtime(now)
       const nextFrame = loop(diff[0] + diff[1] / 1e9)
-      subscriber.next(nextFrame)
+      _.forEach(nextFrame, f => subscriber.next(f))
       now = process.hrtime()
     }, 1000 / fps)
 
