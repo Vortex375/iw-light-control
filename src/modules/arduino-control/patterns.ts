@@ -78,11 +78,21 @@ function patternLinearGradient(memberAddress: number, params: any): Observable<p
   })
 }
 
+/**
+ * Rainbow pattern
+ * 
+ * @param size
+ * @param speed
+ * @param brightness
+ * @param saturation
+ */
 function patternRainbow(memberAddress: number, params: any): Observable<proto.Frame> {
   if ( ! _.isFinite(params.size)) {
     return EMPTY
   }
   const speed = params.speed || 32
+  const value = params.brightness === undefined ? 1 : params.brightness
+  const sat = params.saturation === undefined ? 1 : params.saturation
 
   const buf = Buffer.alloc(params.size * 3)
   const frame: proto.Frame = {
@@ -91,21 +101,15 @@ function patternRainbow(memberAddress: number, params: any): Observable<proto.Fr
     flags: proto.PROTO_CONSTANTS.FLAG_REPEAT,
     payload: buf
   }
-  const baseColor = onecolor([ 'HSV', 0, 1, 1, 1 ])
+  const baseColor = onecolor([ 'HSV', 0, sat, value, 1 ])
 
   function loop(shift: number) {
     let off = 0
     for (let i = 0; i < params.size; i++) {
       let c = baseColor.hue(((i + shift) % params.size) / params.size)
-      let color = {
-        r: c.red() * 255,
-        g: c.green() * 255,
-        b: c.blue() * 255,
-        w: 0
-      }
-      let val = proto.makeColorValueRGB(calculateColor(color, params.correction, params.brightness))
-      val.copy(buf, off, 0, val.length)
-      off += val.length
+      off = buf.writeUInt8(c.blue() * 255, off)
+      off = buf.writeUInt8(c.green() * 255, off)
+      off = buf.writeUInt8(c.red() * 255, off)
     }
   }
 
