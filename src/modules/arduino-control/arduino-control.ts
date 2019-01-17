@@ -16,6 +16,7 @@ const ReadLine: any /* TODO: broken typedef */ = SerialPort.parsers.Readline
 import onecolor = require("onecolor")
 
 import util = require("util")
+import { Subscription } from "rxjs";
 
 const log = logging.getLogger("ArduinoControl")
 
@@ -58,6 +59,8 @@ export class ArduinoControl extends Service {
   private channel: Channel
   private globalSettings: any
   private data: any
+  private currentPattern: Subscription
+  
 
   /* work around node.js (serialport library?) bug */
   private dummyTimer: any
@@ -155,6 +158,11 @@ export class ArduinoControl extends Service {
     if ( ! this.data) {
       return
     }
+    if (this.currentPattern) {
+      this.currentPattern.unsubscribe()
+      this.currentPattern = undefined
+    }
+
     const data = _.clone(this.data)
     /* apply global brightness */
     if (_.isNumber(data.brightness)) {
@@ -200,7 +208,8 @@ export class ArduinoControl extends Service {
 
     /* create color pattern */
     } else {
-      makePattern(this.memberAddress, data).subscribe((frame) => {
+      this.currentPattern = makePattern(this.memberAddress, data)
+      .subscribe((frame) => {
         log.debug("write", data.pattern || "PATTERN_SIMPLE")
         this.queueWrite(frame)
       })
