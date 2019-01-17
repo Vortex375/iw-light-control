@@ -22,7 +22,7 @@ const log = logging.getLogger("ArduinoControl")
 
 const SERVICE_TYPE = "arduino-control"
 const DEFAULT_BAUD_RATE = 250000
-const INTERFRAME_PAUSE = 8 /* ms */
+const INTERFRAME_PAUSE = 32 /* ms */
 const DEVICE_NAME = "/dev/ttyUSB%d"
 
 const EMPTY_BUFFER = Buffer.alloc(proto.PROTO_CONSTANTS.HEADER_SIZE)
