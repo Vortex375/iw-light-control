@@ -68,7 +68,7 @@ function patternLinearGradient(memberAddress: number, params: any): Observable<p
     gradient.push(color)
   }
   gradient.push(to)
-  const buffers = _.map(gradient, proto.makeColorValueRGBW)
+  const buffers = _.map(gradient, proto.makeColorValueRGB)
   const payload = Buffer.concat(buffers)
 
   return singleObservable({
