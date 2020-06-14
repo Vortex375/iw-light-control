@@ -14,7 +14,8 @@ const discovery = new UdpDiscovery(client)
 discovery.start({
   clientConfig: {
     friendlyName: "light-control"
-  }
+  },
+  requestPort: 6031
 })
 
 const control1 = new ArduinoControl(client)
