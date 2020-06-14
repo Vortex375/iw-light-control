@@ -92,6 +92,7 @@ export class ArduinoControl extends Service {
     this.memberAddress = config.memberAddress
 
     this.ds.subscribe(config.dsPath, (d) => {
+      log.debug({data: d}, "light pattern update")
       this.data = d
       this.update()
     }, undefined, true)

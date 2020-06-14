@@ -19,9 +19,11 @@ discovery.start({
 })
 
 const control1 = new ArduinoControl(client)
-control1.start({
-  port: 0,
-  dsPath: "light-control/devices/Living Room",
-  globalPath: "light-control/global",
-  memberAddress: 1
+client.on("connected", () => {
+  control1.start({
+    port: 0,
+    dsPath: "light-control/devices/Living Room",
+    globalPath: "light-control/global",
+    memberAddress: 1
+  })
 })
