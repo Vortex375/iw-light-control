@@ -69,31 +69,24 @@ export class ArduinoControl extends Service {
     super(SERVICE_TYPE)
   }
 
-  start(config: ArduinoControlConfig) {
+  async start(config: ArduinoControlConfig) {
     if (typeof config.port === "string") {
       this.setupPort(config.port, config.baudRate || DEFAULT_BAUD_RATE)
     } else {
       /* TODO: broken typedef */
-      (<any> SerialPort).list((err, ports) => {
-        if (err) {
-          log.error({err: err, path: config.port}, "error listing serial ports")
-          this.setState(State.ERROR, "error listing serial ports")
-          return
-        }
-        log.debug({ports: ports}, "serial port listing")
+      const ports = await SerialPort.list()
+      log.debug({ports: ports}, "serial port listing")
+      const comName = util.format(DEVICE_NAME, config.port)
 
-        const comName = util.format(DEVICE_NAME, config.port)
-
-        for (const p of ports) {
-          if (p.comName === comName) {
-            this.setupPort(p.comName, config.baudRate || DEFAULT_BAUD_RATE)
-            break
-          }
+      for (const p of ports) {
+        if (p.path === comName) {
+          this.setupPort(p.path, config.baudRate || DEFAULT_BAUD_RATE)
+          break
         }
-        if ( ! this.port) {
-          this.setState(State.ERROR, "port does not exist: " + config.port)
-        }
-      })
+      }
+      if ( ! this.port) {
+        this.setState(State.ERROR, "port does not exist: " + config.port)
+      }
     }
 
     this.memberAddress = config.memberAddress
