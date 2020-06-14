@@ -1,14 +1,14 @@
 /* Light control script */
 
 import { ArduinoControl } from "./modules/arduino-control"
-import { DeepstreamClient } from "iw-base/dist/modules/deepstream-client"
-import { UdpDiscovery } from "iw-base/dist/modules/udp-discovery"
+import { IwDeepstreamClient } from "iw-base/modules/deepstream-client"
+import { UdpDiscovery } from "iw-base/modules/udp-discovery"
 
 import minimist = require("minimist")
 
 const argv = minimist(process.argv.slice(2))
 
-const client = new DeepstreamClient()
+const client = new IwDeepstreamClient()
 const discovery = new UdpDiscovery(client)
 
 discovery.start({
@@ -20,7 +20,7 @@ discovery.start({
 const control1 = new ArduinoControl(client)
 control1.start({
   port: 0,
-  dsPath: "light-control/zone/1",
+  dsPath: "light-control/devices/Living Room",
   globalPath: "light-control/global",
   memberAddress: 1
 })

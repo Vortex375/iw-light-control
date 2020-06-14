@@ -16,13 +16,11 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/// <reference types="deepstream.io-client-js" />
-
-import { DeepstreamClient } from "iw-base/dist/modules/deepstream-client"
-import { UdpDiscovery } from "iw-base/dist/modules/udp-discovery"
+import { IwDeepstreamClient } from "iw-base/modules/deepstream-client"
+import { UdpDiscovery } from "iw-base/modules/udp-discovery"
 
 import onecolor = require("onecolor")
-import { disconnect } from "cluster";
+import { disconnect } from "cluster"
 
 /* Test script for direct pixel access via channel */
 
@@ -42,7 +40,7 @@ const UNCORRECTED_COLOR = {
   b: 255
 }
 
-const client = new DeepstreamClient()
+const client = new IwDeepstreamClient()
 const discovery = new UdpDiscovery(client)
 discovery.start()
 

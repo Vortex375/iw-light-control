@@ -16,14 +16,12 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/// <reference types="deepstream.io-client-js" />
-
-import { DeepstreamClient } from "iw-base/dist/modules/deepstream-client"
-import { UdpDiscovery } from "iw-base/dist/modules/udp-discovery"
-import * as proto from './modules/arduino-control/light-proto'
+import { IwDeepstreamClient } from "iw-base/modules/deepstream-client"
+import { UdpDiscovery } from "iw-base/modules/udp-discovery"
+import * as proto from "./modules/arduino-control/light-proto"
 
 import onecolor = require("onecolor")
-import { disconnect } from "cluster";
+import { disconnect } from "cluster"
 
 /* Test script for direct pixel access via channel */
 
@@ -43,22 +41,22 @@ const UNCORRECTED_COLOR = {
   b: 255
 }
 
-const client = new DeepstreamClient()
+const client = new IwDeepstreamClient()
 const discovery = new UdpDiscovery(client)
 discovery.start()
 
-let channel = client.openChannel(CHANNEL_PATH)
+const channel = client.openChannel(CHANNEL_PATH)
 channel.on("open", () => {
   loop(0)
 })
 
-let buf = Buffer.alloc(NUMPIXELS * 3)
+const buf = Buffer.alloc(NUMPIXELS * 3)
 function loop(shift) {
   // console.log("loop", shift)
   let off = 0
-  let color = onecolor([ 'HSV', 0, 1, 1, 1 ])
+  const color = onecolor([ "HSV", 0, 1, 1, 1 ])
   for (let i = 0; i < NUMPIXELS; i++) {
-    let c = color.hue(((i + shift) % NUMPIXELS) / NUMPIXELS)
+    const c = color.hue(((i + shift) % NUMPIXELS) / NUMPIXELS)
     // off = buf.writeUInt8(0, off) /* for RGBW only */
     off = buf.writeUInt8(c.blue() * UNCORRECTED_COLOR.b, off)
     off = buf.writeUInt8(c.green() * UNCORRECTED_COLOR.g, off)
@@ -76,7 +74,7 @@ function loop(shift) {
   }
 }
 
-let records = []
+const records = []
 client.on("connected", () => {
   records.push(client.getRecord(RECORD_PATH))
   // records.push(client.getRecord('light-control/zone/1'))
@@ -85,7 +83,7 @@ client.on("connected", () => {
 
 process.on("SIGINT", () => {
   records.forEach(r => r.set("channel", undefined))
-  //process.nextTick(() => process.exit(0))
+  // process.nextTick(() => process.exit(0))
   discovery.stop()
   setTimeout(() => {
     client.stop()

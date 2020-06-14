@@ -1,22 +1,20 @@
 /* Serial Port Interface to Light Control Arduino Device */
 
-/// <reference types="deepstream.io-client-js" />
-
-import * as logging from "iw-base/dist/lib/logging"
-import { Service, State } from "iw-base/dist/lib/registry"
-import { DeepstreamClient, Channel } from "iw-base/dist/modules/deepstream-client"
+import * as logging from "iw-base/lib/logging"
+import { Service, State } from "iw-base/lib/registry"
+import { IwDeepstreamClient, Channel } from "iw-base/modules/deepstream-client"
 
 import * as proto from "./light-proto"
 import { makePattern, PATTERNS } from "./patterns"
 
 import * as async from "async"
 import * as _ from "lodash"
-import * as SerialPort from "serialport"
+import SerialPort = require("serialport")
 const ReadLine: any /* TODO: broken typedef */ = SerialPort.parsers.Readline
 import onecolor = require("onecolor")
 
 import util = require("util")
-import { Subscription } from "rxjs";
+import { Subscription } from "rxjs"
 
 const log = logging.getLogger("ArduinoControl")
 
@@ -62,12 +60,12 @@ export class ArduinoControl extends Service {
   private globalSettings: any
   private data: any
   private currentPattern: Subscription
-  
+
 
   /* work around node.js (serialport library?) bug */
   private dummyTimer: any
 
-  constructor(private readonly ds: DeepstreamClient) {
+  constructor(private readonly ds: IwDeepstreamClient) {
     super(SERVICE_TYPE)
   }
 
@@ -199,7 +197,7 @@ export class ArduinoControl extends Service {
       this.channel = this.ds.openChannel(this.channelName)
       log.info(`opened channel ${this.channelName}`)
 
-      this.channel.on("message", (msg : ArrayBuffer)  => {
+      this.channel.on("message", (msg: ArrayBuffer)  => {
         if ( ! msg.byteLength) {
           log.warn("message received on channel was not TypedArray instance")
           return
@@ -289,7 +287,7 @@ export class ArduinoControl extends Service {
       (cb) => pauseFirst ? setTimeout(cb, INTERFRAME_PAUSE) : cb(),
       (cb) => {
         this.port.write(buf)
-        let free = this.port.write(EMPTY_BUFFER)
+        const free = this.port.write(EMPTY_BUFFER)
         log.debug({len: buf.length, free: free }, "wrote", buf.length, "bytes")
         if ( ! free) {
           /* drain first before writing again */

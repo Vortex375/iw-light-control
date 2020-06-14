@@ -1,4 +1,4 @@
-import * as logging from "iw-base/dist/lib/logging"
+import * as logging from "iw-base/lib/logging"
 import * as proto from "./light-proto"
 import onecolor = require("onecolor")
 
@@ -80,7 +80,7 @@ function patternLinearGradient(memberAddress: number, params: any): Observable<p
 
 /**
  * Rainbow pattern
- * 
+ *
  * @param size
  * @param speed
  * @param brightness

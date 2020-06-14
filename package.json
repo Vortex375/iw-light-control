@@ -18,27 +18,32 @@
     "test": "ts-node node_modules/jasmine/bin/jasmine"
   },
   "dependencies": {
-    "async": "^2.6.1",
-    "deepstream.io-client-js": "github:Vortex375/deepstream.io-client-js",
-    "lodash": "^4.17.11",
+    "@deepstream/client": "^5.0.8",
+    "@deepstream/types": "^2.1.0",
+    "async": "^3.1.1",
+    "iw-base": "^0.0.1",
+    "lodash": "^4.17.15",
     "minimist": "^1.2.0",
     "onecolor": "^3.1.0",
-    "rxjs": "^6.3.3",
-    "serialport": "^7.1.1"
+    "rxjs": "^6.5.4",
+    "serialport": "^8.0.7"
   },
   "devDependencies": {
-    "@types/async": "^2.0.50",
-    "@types/bunyan": "1.8.5",
-    "@types/jasmine": "^3.3.5",
-    "@types/lodash": "^4.14.119",
+    "@types/async": "^3.0.7",
+    "@types/bunyan": "1.8.6",
+    "@types/jasmine": "^3.5.3",
+    "@types/lodash": "^4.14.149",
     "@types/minimist": "^1.2.0",
-    "@types/node": "^10.12.18",
-    "@types/serialport": "^7.0.1",
-    "concurrently": "^4.1.0",
-    "jasmine": "^3.3.1",
+    "@types/node": "^13.13.2",
+    "@types/serialport": "^8.0.0",
+    "concurrently": "^5.1.0",
+    "jasmine": "^3.5.0",
     "shelljs": "^0.8.3",
-    "ts-node": "^7.0.1",
-    "tslint": "^5.12.0",
-    "typescript": "^3.2.2"
+    "ts-node": "^8.6.2",
+    "tslint": "^6.0.0",
+    "typescript": "~3.8.3"
+  },
+  "publishConfig": {
+    "directory": "dist"
   }
 }
