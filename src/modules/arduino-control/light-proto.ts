@@ -6,18 +6,18 @@ export const PROTO_CONSTANTS = {
   /** broadcast member address */
   ADDR_BROADCAST     : 255,
 
-  /** no-op command*/
+  /** no-op command */
   CMD_NOOP           : 0,
   /** apply solid color */
   CMD_PATTERN_SIMPLE : 1,
   /** shift buffer contents by offset */
   CMD_ROTATE         : 2,
-  
+
   /** apply directly */
   MOD_NONE           : 0,
   /** fade to target color */
   MOD_FADE           : (1 << 4),
-  
+
   /** repeat pattern from offset until end of buffer */
   FLAG_REPEAT        : 1,
   /** header is followed by long payload */
@@ -53,6 +53,15 @@ export function makeColorValueRGB(color: Color): Buffer {
   buf.writeUInt8(color.b, 0)
   buf.writeUInt8(color.g, 1)
   buf.writeUInt8(color.r, 2)
+  return buf
+}
+
+//TODO: fix arduino sketch and remove this function
+export function makeColorValueRGBForLongPayload(color: Color): Buffer {
+  const buf = Buffer.allocUnsafe(3)
+  buf.writeUInt8(color.g, 0)
+  buf.writeUInt8(color.r, 1)
+  buf.writeUInt8(color.b, 2)
   return buf
 }
 
@@ -124,7 +133,7 @@ export function parseFrame(data: Buffer, verifyChecksum = true): Frame {
   const memberAddress = data.readUInt8(4)
   const command = data.readUInt8(5)
   const flags = data.readUInt8(6)
-  
+
   let payload: Buffer, payloadOffset: number
   if (flags & PROTO_CONSTANTS.FLAG_LONG_PAYLOAD) {
     const payloadLength = data.readUInt16LE(7)
@@ -139,7 +148,7 @@ export function parseFrame(data: Buffer, verifyChecksum = true): Frame {
     payload = Buffer.allocUnsafe(4)
     data.copy(payload, 0, 7, 11)
   }
-  
+
   if (verifyChecksum) {
     const checksum = data.readUInt8(4)
       ^ data.readUInt8(5)

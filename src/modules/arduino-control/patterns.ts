@@ -28,7 +28,7 @@ export function makePattern(memberAddress: number, params: any): Observable<prot
   return pattern(memberAddress, params)
 }
 
-function patternSimple(memberAddress: number, params: any) : Observable<proto.Frame> {
+function patternSimple(memberAddress: number, params: any): Observable<proto.Frame> {
   /* validate */
   if ( ! params.value) {
     return EMPTY
@@ -68,7 +68,7 @@ function patternLinearGradient(memberAddress: number, params: any): Observable<p
     gradient.push(color)
   }
   gradient.push(to)
-  const buffers = _.map(gradient, proto.makeColorValueRGB)
+  const buffers = _.map(gradient, proto.makeColorValueRGBForLongPayload)
   const payload = Buffer.concat(buffers)
 
   return singleObservable({
@@ -101,12 +101,12 @@ function patternRainbow(memberAddress: number, params: any): Observable<proto.Fr
     flags: proto.PROTO_CONSTANTS.FLAG_REPEAT,
     payload: buf
   }
-  const baseColor = onecolor([ 'HSV', 0, sat, value, 1 ])
+  const baseColor = onecolor([ "HSV", 0, sat, value, 1 ])
 
   function loop(shift: number) {
     let off = 0
     for (let i = 0; i < params.size; i++) {
-      let c = baseColor.hue(((i + shift) % params.size) / params.size)
+      const c = baseColor.hue(((i + shift) % params.size) / params.size)
       off = buf.writeUInt8(c.blue() * 255, off)
       off = buf.writeUInt8(c.green() * 255, off)
       off = buf.writeUInt8(c.red() * 255, off)
@@ -115,7 +115,7 @@ function patternRainbow(memberAddress: number, params: any): Observable<proto.Fr
 
   /* make initial frame */
   let currentShift = 0
-  loop(currentShift);
+  loop(currentShift)
 
   return animationObservable(frame, (timeDiff) => {
     currentShift = (currentShift + timeDiff * speed) % params.size

@@ -25,14 +25,6 @@ const DEVICE_NAME = "/dev/ttyUSB%d"
 
 const EMPTY_BUFFER = Buffer.alloc(proto.PROTO_CONSTANTS.HEADER_SIZE)
 
-export enum Pattern {
-  PATTERN_SIMPLE
-}
-
-export enum Transition {
-  APPLY_INSTANT
-}
-
 export interface ArduinoControlConfig {
   port: number | string,
   dsPath: string,
