@@ -16,51 +16,51 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { IwDeepstreamClient } from "iw-base/modules/deepstream-client"
-import { UdpDiscovery } from "iw-base/modules/udp-discovery"
-import * as proto from "./modules/arduino-control/light-proto"
+import { IwDeepstreamClient } from 'iw-base/modules/deepstream-client';
+import { UdpDiscovery } from 'iw-base/modules/udp-discovery';
+import * as proto from './modules/arduino-control/light-proto';
 
-import onecolor = require("onecolor")
-import { disconnect } from "cluster"
+import onecolor = require('onecolor');
+import { disconnect } from 'cluster';
 
 /* Test script for direct pixel access via channel */
 
-const RECORD_PATH = "light-control/zone/0"
-const CHANNEL_PATH = "channel-test2"
-const NUMPIXELS = 120
+const RECORD_PATH = 'light-control/zone/0';
+const CHANNEL_PATH = 'channel-test2';
+const NUMPIXELS = 120;
 
 const COLOR_CORRECTION_8MM = {
   r: 255,
   g: 224,
   b: 140
-}
+};
 
 const UNCORRECTED_COLOR = {
   r: 255,
   g: 255,
   b: 255
-}
+};
 
-const client = new IwDeepstreamClient()
-const discovery = new UdpDiscovery(client)
-discovery.start()
+const client = new IwDeepstreamClient();
+const discovery = new UdpDiscovery(client);
+discovery.start();
 
-const channel = client.openChannel(CHANNEL_PATH)
-channel.on("open", () => {
-  loop(0)
-})
+const channel = client.openChannel(CHANNEL_PATH);
+channel.on('open', () => {
+  loop(0);
+});
 
-const buf = Buffer.alloc(NUMPIXELS * 3)
+const buf = Buffer.alloc(NUMPIXELS * 3);
 function loop(shift) {
   // console.log("loop", shift)
-  let off = 0
-  const color = onecolor([ "HSV", 0, 1, 1, 1 ])
+  let off = 0;
+  const color = onecolor([ 'HSV', 0, 1, 1, 1 ]);
   for (let i = 0; i < NUMPIXELS; i++) {
-    const c = color.hue(((i + shift) % NUMPIXELS) / NUMPIXELS)
+    const c = color.hue(((i + shift) % NUMPIXELS) / NUMPIXELS);
     // off = buf.writeUInt8(0, off) /* for RGBW only */
-    off = buf.writeUInt8(c.blue() * UNCORRECTED_COLOR.b, off)
-    off = buf.writeUInt8(c.green() * UNCORRECTED_COLOR.g, off)
-    off = buf.writeUInt8(c.red() * UNCORRECTED_COLOR.r, off)
+    off = buf.writeUInt8(c.blue() * UNCORRECTED_COLOR.b, off);
+    off = buf.writeUInt8(c.green() * UNCORRECTED_COLOR.g, off);
+    off = buf.writeUInt8(c.red() * UNCORRECTED_COLOR.r, off);
   }
 
   if (channel.isOpen()) {
@@ -69,24 +69,24 @@ function loop(shift) {
       memberAddress: 1,
       flags: proto.PROTO_CONSTANTS.FLAG_REPEAT,
       payload: buf
-    }))
-    setTimeout(() => loop((shift + 1) % NUMPIXELS), 16)
+    }));
+    setTimeout(() => loop((shift + 1) % NUMPIXELS), 16);
   }
 }
 
-const records = []
-client.on("connected", () => {
-  records.push(client.getRecord(RECORD_PATH))
+const records = [];
+client.on('connected', () => {
+  records.push(client.getRecord(RECORD_PATH));
   // records.push(client.getRecord('light-control/zone/1'))
-  records.forEach(r => r.set("channel", CHANNEL_PATH))
-})
+  records.forEach((r) => r.set('channel', CHANNEL_PATH));
+});
 
-process.on("SIGINT", () => {
-  records.forEach(r => r.set("channel", undefined))
+process.on('SIGINT', () => {
+  records.forEach((r) => r.set('channel', undefined));
   // process.nextTick(() => process.exit(0))
-  discovery.stop()
+  discovery.stop();
   setTimeout(() => {
-    client.stop()
-    process.exit(0)
-  }, 500)
-})
+    client.stop();
+    process.exit(0);
+  }, 500);
+});

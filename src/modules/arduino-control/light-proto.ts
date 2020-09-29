@@ -1,3 +1,6 @@
+// bitwise operations are required and used extensively here
+// tslint:disable no-bitwise
+
 export const PROTO_CONSTANTS = {
   /** size of protocol header in bytes */
   HEADER_SIZE        : 12,
@@ -21,48 +24,48 @@ export const PROTO_CONSTANTS = {
   /** repeat pattern from offset until end of buffer */
   FLAG_REPEAT        : 1,
   /** header is followed by long payload */
-  FLAG_LONG_PAYLOAD  : (1 << 7),
-}
+  FLAG_LONG_PAYLOAD  : (1 << 7)
+};
 
 export interface Color {
-  r: number,
-  g: number,
-  b: number,
-  w: number
+  r: number;
+  g: number;
+  b: number;
+  w: number;
 }
 
 export interface Frame {
-  memberAddress: number,
-  command: number,
-  flags?: number,
-  payload: Buffer,
-  payloadOffset?: number
+  memberAddress: number;
+  command: number;
+  flags?: number;
+  payload: Buffer;
+  payloadOffset?: number;
 }
 
 export function makeColorValueRGBW(color: Color): Buffer {
-  const buf = Buffer.allocUnsafe(4)
-  buf.writeUInt8(color.w, 0)
-  buf.writeUInt8(color.b, 1)
-  buf.writeUInt8(color.g, 2)
-  buf.writeUInt8(color.r, 3)
-  return buf
+  const buf = Buffer.allocUnsafe(4);
+  buf.writeUInt8(color.w, 0);
+  buf.writeUInt8(color.b, 1);
+  buf.writeUInt8(color.g, 2);
+  buf.writeUInt8(color.r, 3);
+  return buf;
 }
 
 export function makeColorValueRGB(color: Color): Buffer {
-  const buf = Buffer.allocUnsafe(3)
-  buf.writeUInt8(color.b, 0)
-  buf.writeUInt8(color.g, 1)
-  buf.writeUInt8(color.r, 2)
-  return buf
+  const buf = Buffer.allocUnsafe(3);
+  buf.writeUInt8(color.b, 0);
+  buf.writeUInt8(color.g, 1);
+  buf.writeUInt8(color.r, 2);
+  return buf;
 }
 
 //TODO: fix arduino sketch and remove this function
 export function makeColorValueRGBForLongPayload(color: Color): Buffer {
-  const buf = Buffer.allocUnsafe(3)
-  buf.writeUInt8(color.g, 0)
-  buf.writeUInt8(color.r, 1)
-  buf.writeUInt8(color.b, 2)
-  return buf
+  const buf = Buffer.allocUnsafe(3);
+  buf.writeUInt8(color.g, 0);
+  buf.writeUInt8(color.r, 1);
+  buf.writeUInt8(color.b, 2);
+  return buf;
 }
 
 export function parseColorValueRGBW(value: Buffer, offset = 0): Color {
@@ -71,82 +74,82 @@ export function parseColorValueRGBW(value: Buffer, offset = 0): Color {
     g: value.readUInt8(offset + 2),
     b: value.readUInt8(offset + 1),
     w: value.readUInt8(offset)
-  }
+  };
 }
 
 export function makeFrame(frame: Frame): Buffer {
-  const buf = Buffer.allocUnsafe(PROTO_CONSTANTS.HEADER_SIZE)
-  PROTO_CONSTANTS.START_MARKER.copy(buf)
-  let off = PROTO_CONSTANTS.START_MARKER.length
-  off = buf.writeUInt8(frame.memberAddress, off)
-  off = buf.writeUInt8(frame.command, off)
-  let flags = frame.flags || 0
+  const buf = Buffer.allocUnsafe(PROTO_CONSTANTS.HEADER_SIZE);
+  PROTO_CONSTANTS.START_MARKER.copy(buf);
+  let off = PROTO_CONSTANTS.START_MARKER.length;
+  off = buf.writeUInt8(frame.memberAddress, off);
+  off = buf.writeUInt8(frame.command, off);
+  let flags = frame.flags || 0;
   if (frame.payload.length > 4 || frame.payloadOffset !== undefined) {
-    flags |= PROTO_CONSTANTS.FLAG_LONG_PAYLOAD
-    const offset = frame.payloadOffset || 0
-    off = buf.writeUInt8(flags, off)
-    off = buf.writeUInt16LE(frame.payload.length, off)
-    off = buf.writeUInt16LE(offset, off)
+    flags |= PROTO_CONSTANTS.FLAG_LONG_PAYLOAD;
+    const offset = frame.payloadOffset || 0;
+    off = buf.writeUInt8(flags, off);
+    off = buf.writeUInt16LE(frame.payload.length, off);
+    off = buf.writeUInt16LE(offset, off);
     const checksum = frame.memberAddress
       ^ frame.command
       ^ flags
       ^ (frame.payload.length & 0xFF)
       ^ ((frame.payload.length >> 8) & 0xFF)
       ^ (offset & 0xFF)
-      ^ ((offset >> 8) & 0xFF)
-    buf.writeUInt8(checksum, off)
+      ^ ((offset >> 8) & 0xFF);
+    buf.writeUInt8(checksum, off);
 
-    const packet = Buffer.allocUnsafe(PROTO_CONSTANTS.HEADER_SIZE + frame.payload.length)
-    buf.copy(packet, 0, 0, PROTO_CONSTANTS.HEADER_SIZE)
-    frame.payload.copy(packet, PROTO_CONSTANTS.HEADER_SIZE, 0, frame.payload.length)
-    return packet
+    const packet = Buffer.allocUnsafe(PROTO_CONSTANTS.HEADER_SIZE + frame.payload.length);
+    buf.copy(packet, 0, 0, PROTO_CONSTANTS.HEADER_SIZE);
+    frame.payload.copy(packet, PROTO_CONSTANTS.HEADER_SIZE, 0, frame.payload.length);
+    return packet;
   } else {
-    flags &= ~PROTO_CONSTANTS.FLAG_LONG_PAYLOAD
-    off = buf.writeUInt8(flags, off)
-    let payload: Buffer
+    flags &= ~PROTO_CONSTANTS.FLAG_LONG_PAYLOAD;
+    off = buf.writeUInt8(flags, off);
+    let payload: Buffer;
     if (frame.payload.length < 4) {
-      payload = Buffer.alloc(4)
-      frame.payload.copy(payload, 0, 0, frame.payload.length)
+      payload = Buffer.alloc(4);
+      frame.payload.copy(payload, 0, 0, frame.payload.length);
     } else {
-      payload = frame.payload
+      payload = frame.payload;
     }
-    payload.copy(buf, off, 0, 4)
-    off += 4
+    payload.copy(buf, off, 0, 4);
+    off += 4;
     const checksum = frame.memberAddress
       ^ frame.command
       ^ flags
       ^ payload.readUInt8(0)
       ^ payload.readUInt8(1)
       ^ payload.readUInt8(2)
-      ^ payload.readUInt8(3)
-    buf.writeUInt8(checksum, off)
-    return buf
+      ^ payload.readUInt8(3);
+    buf.writeUInt8(checksum, off);
+    return buf;
   }
 }
 
-
 export function parseFrame(data: Buffer, verifyChecksum = true): Frame {
   if (data.length < PROTO_CONSTANTS.HEADER_SIZE) {
-    throw new Error("data has invalid length, expected 12 byte header")
+    throw new Error('data has invalid length, expected 12 byte header');
   }
 
-  const memberAddress = data.readUInt8(4)
-  const command = data.readUInt8(5)
-  const flags = data.readUInt8(6)
+  const memberAddress = data.readUInt8(4);
+  const command = data.readUInt8(5);
+  const flags = data.readUInt8(6);
 
-  let payload: Buffer, payloadOffset: number
+  let payload: Buffer;
+  let payloadOffset: number;
   if (flags & PROTO_CONSTANTS.FLAG_LONG_PAYLOAD) {
-    const payloadLength = data.readUInt16LE(7)
-    payloadOffset = data.readUInt16LE(9)
+    const payloadLength = data.readUInt16LE(7);
+    payloadOffset = data.readUInt16LE(9);
     if (data.length < payloadLength + PROTO_CONSTANTS.HEADER_SIZE) {
-      throw new Error("data has invalid length, expected " + payloadLength + " bytes payload")
+      throw new Error('data has invalid length, expected ' + payloadLength + ' bytes payload');
     }
-    payload = Buffer.allocUnsafe(payloadLength)
-    data.copy(payload, 0, 12, payload.length)
+    payload = Buffer.allocUnsafe(payloadLength);
+    data.copy(payload, 0, 12, payload.length);
   } else {
-    payloadOffset = undefined
-    payload = Buffer.allocUnsafe(4)
-    data.copy(payload, 0, 7, 11)
+    payloadOffset = undefined;
+    payload = Buffer.allocUnsafe(4);
+    data.copy(payload, 0, 7, 11);
   }
 
   if (verifyChecksum) {
@@ -156,19 +159,19 @@ export function parseFrame(data: Buffer, verifyChecksum = true): Frame {
       ^ data.readUInt8(7)
       ^ data.readUInt8(8)
       ^ data.readUInt8(9)
-      ^ data.readUInt8(10)
+      ^ data.readUInt8(10);
     if (checksum !== data.readUInt8(11)) {
-      throw new Error("data has invalid checksum")
+      throw new Error('data has invalid checksum');
     }
   }
 
   return {
-    memberAddress: memberAddress,
-    command: command,
-    flags: flags,
-    payload: payload,
-    payloadOffset: payloadOffset
-  }
+    memberAddress,
+    command,
+    flags,
+    payload,
+    payloadOffset
+  };
 }
 
 // export function patternSimple(memberAddress: number, color: Color, fade: boolean = false) : Buffer {

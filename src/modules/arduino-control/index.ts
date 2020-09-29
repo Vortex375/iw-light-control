@@ -1,1 +1,1 @@
-export * from "./arduino-control"
+export * from './arduino-control';
