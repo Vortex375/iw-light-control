@@ -11,7 +11,9 @@
           "friendlyName": "light-control"
         },
         "requestPort": 6031
-      }
+      },
+      "priority": -1,
+      "await": "connected"
     },
     {
       "component": "arduino-control",

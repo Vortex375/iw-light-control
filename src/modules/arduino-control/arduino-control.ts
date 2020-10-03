@@ -6,7 +6,7 @@ import { IwDeepstreamClient, Channel } from 'iw-base/modules/deepstream-client';
 
 import * as proto from './light-proto';
 import { makePattern } from './patterns';
-import { Component, ConstructorParameters } from 'iw-ioc';
+import { Component, ConstructorParameters, Scoped } from 'iw-ioc';
 import * as async from 'async';
 import * as _ from 'lodash';
 import SerialPort = require('serialport');
@@ -33,6 +33,7 @@ export interface ArduinoControlConfig {
 }
 
 @Component('arduino-control')
+@Scoped()
 @ConstructorParameters([IwDeepstreamClient])
 export class ArduinoControl extends Service {
 
@@ -212,7 +213,7 @@ export class ArduinoControl extends Service {
      * for some reason events from the serial port are not processed
      * unless we manually spin the even loop like so */
     this.resetDummyTimer();
-    this.dummyTimer = setInterval(() => {}, 1);
+    this.dummyTimer = setInterval(() => {/* do nothing */}, 1);
   }
 
   resetDummyTimer() {
