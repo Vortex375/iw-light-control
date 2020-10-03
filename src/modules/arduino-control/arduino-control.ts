@@ -6,7 +6,7 @@ import { IwDeepstreamClient, Channel } from 'iw-base/modules/deepstream-client';
 
 import * as proto from './light-proto';
 import { makePattern } from './patterns';
-
+import { Component, ConstructorParameters } from 'iw-ioc';
 import * as async from 'async';
 import * as _ from 'lodash';
 import SerialPort = require('serialport');
@@ -32,6 +32,8 @@ export interface ArduinoControlConfig {
   baudRate?: number;
 }
 
+@Component('arduino-control')
+@ConstructorParameters([IwDeepstreamClient])
 export class ArduinoControl extends Service {
 
   private memberAddress: number;

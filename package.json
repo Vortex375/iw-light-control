@@ -22,6 +22,7 @@
     "@deepstream/types": "^2.2.0",
     "async": "^3.1.1",
     "iw-base": "^0.0.1",
+    "iw-ioc": "^0.0.1",
     "lodash": "^4.17.15",
     "minimist": "^1.2.0",
     "onecolor": "^3.1.0",

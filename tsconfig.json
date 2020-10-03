@@ -9,6 +9,7 @@
     "declaration": true,
     "noImplicitAny": false,
     "esModuleInterop": true,
+    "experimentalDecorators": true,
     "types": [
       "node"
     ],

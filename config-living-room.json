@@ -1,0 +1,26 @@
+{
+  "load": [
+    "iw-base/modules/udp-discovery",
+    "./modules/arduino-control"
+  ],
+  "modules": [
+    {
+      "component": "udp-discovery",
+      "config": {
+        "clientConfig": {
+          "friendlyName": "light-control"
+        },
+        "requestPort": 6031
+      }
+    },
+    {
+      "component": "arduino-control",
+      "config": {
+        "port": 0,
+        "dsPath": "light-control/devices/Living Room",
+        "globalPath": "light-control/global",
+        "memberAddress": 1
+      }
+    }
+  ]
+}

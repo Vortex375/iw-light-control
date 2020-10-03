@@ -1,29 +1,19 @@
-/* Light control script */
+/*
+  iw - Intelligent Wiring for Home Automation and other uses.
+  Copyright (C) 2017-2020 Benjamin Schmitz
 
-import { ArduinoControl } from './modules/arduino-control';
-import { IwDeepstreamClient } from 'iw-base/modules/deepstream-client';
-import { UdpDiscovery } from 'iw-base/modules/udp-discovery';
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
 
-import minimist = require('minimist');
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
 
-const argv = minimist(process.argv.slice(2));
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
 
-const client = new IwDeepstreamClient();
-const discovery = new UdpDiscovery(client);
-
-discovery.start({
-  clientConfig: {
-    friendlyName: 'light-control'
-  },
-  requestPort: 6031
-});
-
-const control1 = new ArduinoControl(client);
-client.on('connected', () => {
-  control1.start({
-    port: 0,
-    dsPath: 'light-control/devices/Living Room',
-    globalPath: 'light-control/global',
-    memberAddress: 1
-  });
-});
+import 'iw-base/main';
