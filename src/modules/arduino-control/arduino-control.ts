@@ -6,7 +6,7 @@ import { IwDeepstreamClient, Channel } from 'iw-base/modules/deepstream-client';
 
 import * as proto from './light-proto';
 import { makePattern } from './patterns';
-import { Component, ConstructorParameters, Scoped } from 'iw-ioc';
+import { Component, Inject, Scoped } from 'iw-ioc';
 import * as async from 'async';
 import * as _ from 'lodash';
 import SerialPort = require('serialport');
@@ -34,7 +34,7 @@ export interface ArduinoControlConfig {
 
 @Component('arduino-control')
 @Scoped()
-@ConstructorParameters([IwDeepstreamClient])
+@Inject([IwDeepstreamClient])
 export class ArduinoControl extends Service {
 
   private memberAddress: number;
