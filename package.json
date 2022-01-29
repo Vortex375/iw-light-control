@@ -18,7 +18,7 @@
     "test": "ts-node node_modules/jasmine/bin/jasmine"
   },
   "dependencies": {
-    "@deepstream/client": "^5.2.5",
+    "@deepstream/client": "^5.2.6",
     "@deepstream/types": "^2.2.0",
     "async": "^3.1.1",
     "iw-base": "^0.0.1",
@@ -31,7 +31,7 @@
   },
   "devDependencies": {
     "@types/async": "^3.0.7",
-    "@types/bunyan": "1.8.6",
+    "@types/bunyan": "^1.8.8",
     "@types/jasmine": "^3.5.3",
     "@types/lodash": "^4.14.161",
     "@types/minimist": "^1.2.0",
